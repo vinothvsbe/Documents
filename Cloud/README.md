@@ -57,4 +57,16 @@ Service Level Agreement - The uptime% of a cloud service.
 
 There is a way to calculate SLA's using the tool called [UpTime](https://uptime.is)
 
+## Cost
+In cloud everything is Cost.
+- Per Resource (For eg,VM)
+- Per Consumption (For eg, Function Apps)
+- Reservations
+
+Always check cost before provisioning
+
+To Check any pricing upfront make sure we use [Azure Calculator](https://azure.microsoft.com/en-in/pricing/calculator/)
+
+
+
 
