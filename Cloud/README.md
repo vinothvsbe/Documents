@@ -53,6 +53,6 @@ Used to store almost anything. Used transparently by any service in Azure. Eg, D
 ## SLA
 Service Level Agreement - The uptime% of a cloud service.
 
-![Alt text](Cloud/SLA.png?raw=true "SLA")
+![Alt text](SLA.png?raw=true "SLA")
 
 
