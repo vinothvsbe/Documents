@@ -91,4 +91,10 @@ Sometimes there is a posibility that domain may undergo maintanence activity. Du
 
 The best way to avoid Fault domain is deploying across different region in Availability zone. This ensure that not all server will shutdown simultaneously.
 
+- Availability Zone
+- Availability Set
+
+## Azure Resource Management (ARM) Template
+A JSON file which contains complete details about what configuration we have defined while creating a new resource.
+It can be exported, imported, modified and reused for creating the clone of resource based on configuration mentioned in ARM template.
 
