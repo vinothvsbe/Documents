@@ -68,5 +68,27 @@ Always check cost before provisioning
 To Check any pricing upfront make sure we use [Azure Calculator](https://azure.microsoft.com/en-in/pricing/calculator/)
 
 
+## VSCode Extensions for Azure
+- Azure Account
+- Azure App Service
+
+## Different ways to reduce VM Cost
+- **Auto Shutdown**
+- **Reserved Instances**
+- **Spot Instances** - Using unused server for VM, which can be dropped anytime by Azure with short notice.
+
+## Availability
+There are four types of Availability concpets.
+![Availability](Availability.png?raw=true "Availability")
+
+#### Fault Domain
+If the server is placed in a rack and if there is any network problem to that rack or any physical damage to that rack, the entire servers inside that rack will go down. So making sure the VM's or server spread across multiple racks will sort out Fault Domain problem.
+
+#### Update Domain
+Sometimes there is a posibility that domain may undergo maintanence activity. Due to security update or my be of multiple reason. And all the servers for an application is in same logical domain then when it undergoes maintainence activity then the application will go down. So its better to split it across multiple logical domain, so that if one goes on maintanence other will be there to serve request.
+
+![FaultDomain](FaultDomain.png "Fault Domain")
+
+The best way to avoid Fault domain is deploying across different region in Availability zone. This ensure that not all server will shutdown simultaneously.
 
 
