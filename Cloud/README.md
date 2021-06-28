@@ -96,5 +96,11 @@ The best way to avoid Fault domain is deploying across different region in Avail
 
 ## Azure Resource Management (ARM) Template
 A JSON file which contains complete details about what configuration we have defined while creating a new resource.
-It can be exported, imported, modified and reused for creating the clone of resource based on configuration mentioned in ARM template.
+It can be exported, imported, modified and reused for creating the clone of resource based on configuration mentioned in ARM template. It is very important to use while automation.
 
+## Resource Proviers
+Resource providers are the list of capabilities available for subscriptions. Once narrow down to subscription we have to find resource providers. In that there will be a list of resources which have already capabilities registered. If there is which is not regisitered then we can select that capability and register it. It will take some time to get registration completed. To check the status we can use batch command. 
+
+```shell
+az provider show--namespace microsoft.insight -o table
+```
