@@ -7,7 +7,8 @@
 
 5 Stages of Secure Atchitecture Process
 
-``` mermaid graph
+``` mermaid
+graph LR
 A((Threat Modeling)) --> B((Secure Architecture))
 B((Secure Architecture)) --> C((SDLC))
 C((SDLC)) --> D((Testing))
