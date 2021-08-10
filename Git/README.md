@@ -46,3 +46,10 @@ Whenever we forgot to type git commit message and just we provide git commit the
 By default it asks us to enter commit message. But it is not editable. To make it editable press '**i**'
 Then write message and then press '**:wq**' to write and quit editor in command prompt. 
 But we can chnage this editor to our default editor like ***Visual Studio Code***
+
+To configure **Visual Studio Code** as a default editor, here is the command for that
+
+``` bash
+git config --global core.editor "code --wait" # To configure VS Code
+git config core.editor notepad # ToConfigure notepad as editor
+```
