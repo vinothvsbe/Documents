@@ -42,3 +42,7 @@ git commit -m "<Message>"
 
 > Keep your commits atomic
 
+Whenever we forgot to type git commit message and just we provide git commit then by default it opens up **Vim** editor. But to work on that is little complicated
+By default it asks us to enter commit message. But it is not editable. To make it editable press '**i**'
+Then write message and then press '**:wq**' to write and quit editor in command prompt. 
+But we can chnage this editor to our default editor like ***Visual Studio Code***
