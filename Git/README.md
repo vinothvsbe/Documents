@@ -18,6 +18,7 @@ git config user.email # To get user email
 To get complete log of the current git repo
 ``` bash
 git log
+git log --oneline #Will provide only summary of the log
 ```
 Get current status
 ``` bash
