@@ -31,11 +31,14 @@ git init
 
 To add files to staging 
 ``` bash
-git add <filename1> <filename2> ... # Provide space between files and folders
+git add <filename1> <filename2>  # Provide space between files and folders
+git add . # '.' will stage all the files together to staged
 ```
 To commit changes from Staging to local repository
 
 ```bash
 git commit -m "<Message>"
 ```
+
+> Keep your commits atomic
 
