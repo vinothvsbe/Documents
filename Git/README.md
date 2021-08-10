@@ -53,3 +53,7 @@ To configure **Visual Studio Code** as a default editor, here is the command for
 git config --global core.editor "code --wait" # To configure VS Code
 git config core.editor notepad # ToConfigure notepad as editor
 ```
+If you are facing any problem with error message such as <mark>code not found</mark>, its possibly because VS Code wouldn't have got added to path. So the right way is to navigate to VS Code => ⌘+⇧+P (To open command pallette) or Windows + Shift + P (In Windows) => Type "Code" and click "Add code to path"
+
+
+
