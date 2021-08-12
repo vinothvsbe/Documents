@@ -38,7 +38,9 @@ git add . # '.' will stage all the files together to staged
 To commit changes from Staging to local repository
 
 ```bash
-git commit -m "<Message>"
+git commit -m "<Message>" # To commit added items
+git commit -a -m "<Message>" # -a will add all the un added files and then it will commit with message. 
+#Dont have to call of git add seperately
 ```
 
 > Keep your commits atomic
