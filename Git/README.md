@@ -66,3 +66,13 @@ git commit --amend # This open up the default editor to
 #change comment in case if you want to change the comment
 ```
 ### .gitignore
+If we have to ignore following patterns can be used
+<mark>\*.txt</mark> -- To ignore text files
+<mark>FolderName/</mark> -- To ignore folders use '/' after
+<mark>[Ff]olderName/</mark> -- To ignore folder name starts with F capital or small case.
+<mark>**/[Pp]ackages/*</mark> -- Wherever Packages folder is there can be ignored and all items inside that will also be ignored
+
+<mark>!**/[Pp]ackages/build/</mark> -- Wherever Packages fodler is there that can be ignored except the Packages folder which contains build folder should not be (!) ignored
+
+## Branching
+
