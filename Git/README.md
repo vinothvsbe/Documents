@@ -76,3 +76,19 @@ If we have to ignore following patterns can be used
 
 ## Branching
 
+#### HEAD
+HEAD is nothing to pointer for the current branch
+
+Wherever the current branch is HEAD will move to that branch. If branch needs to be changed then HEAD need to be switchted to that branch
+
+Viewing Branch
+``` bash
+git branch # Shows current branch
+```
+Whichever has \* is considered to be active branch
+
+To create a new branch
+``` bash
+git branch <branch-name> #Make sure that it shouldnt include spaces
+```
+
