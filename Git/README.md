@@ -56,9 +56,13 @@ git config core.editor notepad # ToConfigure notepad as editor
 ```
 If you are facing any problem with error message such as <mark>code not found</mark>, its possibly because VS Code wouldn't have got added to path. So the right way is to navigate to VS Code => ⌘+⇧+P (To open command pallette) or Windows + Shift + P (In Windows) => Type "Code" and click "Add code to path"
 
+### Amend
+For some reason you forgot to commit a file or you have written wrong commit message. Anything to do with exisitng commit, then you following commands will help
 
-
-
-
-
-
+``` bash
+git commit -m "Some Commit"
+git add <missedFile> # in case if you have missed
+git commit --amend # This open up the default editor to 
+#change comment in case if you want to change the comment
+```
+### .gitignore
