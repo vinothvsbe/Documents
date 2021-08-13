@@ -93,4 +93,17 @@ To create a new branch
 ``` bash
 git branch <branch-name> #Make sure that it shouldnt include spaces
 ```
+#### Switch
+Switching between different branches will be done with the help of 
 
+``` bash
+git switch <branch-name> # Switch to existing branch
+git switch -c <branch-name> # Create the branch and switch to it
+```
+
+#### Checkout
+Checkout is just similar to Switch but with lot more additional features
+
+``` bash
+git checkout <branch-name>
+```
