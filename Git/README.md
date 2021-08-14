@@ -123,5 +123,7 @@ git branch -d -f <branch-name> # Just similar to git branch -D <branch-name> . T
 ```
 To rename the branch
 ``` bash
-git branch -m <branch-name> # -m stands for move/rename. The concept is we should be in that current branch to rename it. 
+git branch -m <branch-name> # -m stands for move/rename. 
+#The concept is we should be in that current branch to move/rename it. 
+#So first switch to the right branch and then execute this command 
 ```
