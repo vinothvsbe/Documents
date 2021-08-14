@@ -100,10 +100,12 @@ Switching between different branches will be done with the help of
 git switch <branch-name> # Switch to existing branch
 git switch -c <branch-name> # Create the branch and switch to it
 ```
+switch  <mark>-c</mark> is nothing but create
 
 #### Checkout
 Checkout is just similar to Switch but with lot more additional features
 
 ``` bash
-git checkout <branch-name>
+git checkout <branch-name> # Switch to existing branch
+git checkout -b <branch-name> # Create the branch and switch to it
 ```
