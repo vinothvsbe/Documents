@@ -109,3 +109,19 @@ Checkout is just similar to Switch but with lot more additional features
 git checkout <branch-name> # Switch to existing branch
 git checkout -b <branch-name> # Create the branch and switch to it
 ```
+
+>*Whenever we switch the branches if the file which is present accross has conflict then it will not allow you to switch without committing the changes. Whereas if the file is completely new and that file is not present in any branch then you can take that file across any branches without committing.*
+
+#### Deleting and Renaming Branches
+To Delete the branch following command will help
+
+``` bash
+git branch -d <branch-name> # This will delete the branch if it is new
+git branch -D <branch-name> # This will force delete the branch though it is used. 
+#But thing to remember is if you want to delete the brancht then HEAD should not be in that branch
+git branch -d -f <branch-name> # Just similar to git branch -D <branch-name> . To Force delete
+```
+To rename the branch
+``` bash
+git branch -m <branch-name> # -m stands for move/rename. The concept is we should be in that current branch to rename it. 
+```
