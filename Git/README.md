@@ -136,4 +136,4 @@ Following commands in sequence are going to be useful for that
 git switch main #Always make sure the current branch is destination branch
 git merge <branch-name>
 ```
-This is called **Fast Forward Merge**. The reason it is called so because there is no commit from main branch. and we are going to merge commits from new branch to the main branch. Its actually simulated as moving master pointer to the new branch pointer.
+This is called **Fast Forward Merge**. The reason it is called so because there is no commit from main branch and we are going to merge commits from new branch to the main branch. Its actually simulated as moving master pointer to the new branch pointer.
