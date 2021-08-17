@@ -127,3 +127,13 @@ git branch -m -f <branch-name> # -m stands for move/rename.
 #The concept is we should be in that current branch to move/rename it. 
 #So first switch to the right branch and then execute this command 
 ```
+## Merge
+
+At somepoint we need to merge what is located in branch with main branch (also called as <mark>trunk</mark>).
+Following commands in sequence are going to be useful for that
+
+``` bash
+git switch main #Always make sure the current branch is destination branch
+git merge <branch-name>
+```
+This is called **Fast Forward Merge**. The reason it is called so because there is no commit from main branch. and we are going to merge commits from new branch to the main branch. Its actually simulated as moving master pointer to the new branch pointer.
