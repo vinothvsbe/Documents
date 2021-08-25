@@ -138,4 +138,8 @@ git merge <branch-name>
 ```
 This is called **Fast Forward Merge**. The reason it is called so because there is no commit from main branch and we are going to merge commits from new branch to the main branch. Its actually simulated as moving master pointer to the new branch pointer.
 
-If there is any changes in Main branch and also in the branch which we have created earlier, then it is no more a Fast forward branch. It requires a commit message and conflict needs to be resolved
+If there is any changes in Main branch and also in the branch which we have created earlier, then it is no more a Fast forward branch. It requires a commit message and conflict needs to be resolved.
+
+####Merge Conflict
+When we merge two branches git will try to do its best to merge changes. But there are some situations where Git will not be able to decide on which side to pick and merge resolve in conflict. On that time git will leave it to us to decide. That is merging conflict
+
