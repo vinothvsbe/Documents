@@ -143,3 +143,43 @@ If there is any changes in Main branch and also in the branch which we have crea
 ####Merge Conflict
 When we merge two branches git will try to do its best to merge changes. But there are some situations where Git will not be able to decide on which side to pick and merge resolve in conflict. On that time git will leave it to us to decide. That is merging conflict
 
+#### Git Diff
+Git Diff's are used to find the differences between branches, commits, files and our working directories
+
+We often use Git Diff along side of Git log, Git Status  to get a better picture of a repository and how it has changed over a period of time.
+
+``` bash
+git diff
+```
+
+![GitDiff](gitdiff.png)
+
+From the above picture we can see that (-) symbol is for left side of the file and (+) is for right side of the file. Actually both are same file but Git prtends that it is comparing with newer version of file with older version of file.
+
+In the picture mentioned above has two different section of difference.
+
+And point to be noted is that it usuayll include few lines before and after to exact location where file has changed.
+
+without any options *git diff* will list all changes in the working directory that are not staged for next commit
+ 
+>Compares staging and working directory by default
+
+**Git Diff HEAD**
+Git Diff HEAD will bring all changes from repository whether its staged or unstaged
+
+```bash
+git diff HEAD
+```
+
+> Difference between *git diff* and *git diff HEAD* is first one will bring only changes which is with non staged versus the commit but later one will bring all changes whether those are staged or unstaged
+
+**Git Diff --Staged & Git Diff --Cached**
+*git diff --staged* or *git diff --cached* will bring all difference between staged and last commit
+
+```bash
+git diff --staged
+git diff --cached #Its just alias for --staged
+```
+
+
+
