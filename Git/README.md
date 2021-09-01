@@ -181,5 +181,13 @@ git diff --staged
 git diff --cached #Its just alias for --staged
 ```
 
+**Git Diff --Staged [Specific File Name]**
+If we want to view details about a specific file then we can use *git diff --staged [specific file name]*
+
+```bash
+git diff --staged [specific file name]
+```
+
+
 
 
