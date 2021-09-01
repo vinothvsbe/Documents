@@ -188,6 +188,37 @@ If we want to view details about a specific file then we can use *git diff --sta
 git diff --staged [specific file name]
 ```
 
+**Comparing changes between branches**
+If we want to compare difference between two different branches
 
+```bash
+git diff branch1..branch2
+git diff branch1 branch2 # Just another way of doing the same
+```
+
+**Comparing changes between commits**
+If we want to compare two different commits then followign command will be useful
+
+```bash
+git diff commit1hash..commit2hash
+```
+>Commit hash is nothing but the hash (alphanumeric) value we  get while we use *git log --online* or *git log*. For eg **d4dc3db**
+
+## Stashing
+Git stashing is temporary way of shelving changes so that when we switch current branch without forcing ourselves to checkin stashing allows to have it temporarily placed.
+
+```bash
+git stash
+git stash save # Is alias of git stash
+git stash pop # Used to remove the recently stashed changes and e-apply them to your workign copy
+git stash apply # If you want to apply stashed content back to branch and keep stash as it is
+```
+
+*git stash apply* will keep stashed content right there. when *pop* is used it will remove stahs from the current stashing location and get that to current branch. But *apply* will keep the stash right there, though it apply the stashed content right there.
+
+>If we stash something and if there is conflict while applying back then it will show merge conflict.
+
+**Stashing multiple times**
+Multiple stash can also be added to stash stack
 
 
