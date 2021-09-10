@@ -1,0 +1,1 @@
+Kibana acts as a dashboard for Elastic search data to display few data in graphical or tabular structure.
