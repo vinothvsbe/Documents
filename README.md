@@ -11,3 +11,5 @@ All my learning docs are located here
     - [Logstash](ElasticSearch/Logstash/README.md)
     - [X-Pack](ElasticSearch/xpack/README.md)
 
+- [Migration]()
+    - [Angular](Migration/Angular/README.md)
