@@ -33,3 +33,20 @@
  ```
 
 ![Indices Details](indices_data.png)
+
+
+All the above Query DSL were executed in Kibana Console. We can exactly do the same thing using CURL as well.
+For the Query DSL
+```
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+CURL command is
+```bash
+curl -XGET "http://localhost:9200/_search" -H 'Content-Type: application/json' -d'{  "query": {    "match_all": {}  }}'
+```
+We can use any HTTP client to do this work.
