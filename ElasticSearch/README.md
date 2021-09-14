@@ -1,4 +1,5 @@
 #Elastic Search
+
 **Node** - is an instance of Elastic Search. Each node will store a part of our data. Each node belongs to cluster
 
 **Cluster** - Cluster can have multiple dependant nodes. We can run multiple clusters of Elastic Search.  For Eg: We can have Ecommerce Product cluster and Performance monitoring clusters etc.
