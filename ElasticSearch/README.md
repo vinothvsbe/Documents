@@ -1,4 +1,4 @@
-#Elastic Search
+# Elastic Search
 
 **Node** - is an instance of Elastic Search. Each node will store a part of our data. Each node belongs to cluster
 
