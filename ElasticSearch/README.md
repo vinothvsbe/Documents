@@ -108,6 +108,34 @@ Replica shards is just like any other shards. So in case if we want to increase 
 
 CPU Parallelization increase performance if multiple replica shards are in same node
 
+To create replica shards then following command need to be executed
+
+```
+PUT /pages
+```
+Here *pages* represent the name of the replica shard.
+
+After creating the page status goes to yellow. the reason is because once this node goes down then there is no use of that Replica Shard which we created. To represent that this yellow warning is appearing.
+
+To see below result
+```
+GET /_cat/indices?v
+```
+
+![Indices](indices_data1.png)
+
+In the above command 'v' indicates verbose. If you would have observed Kibana shards the replica Shards are 0 it means that as of now they have ver limited data so it is set to 0. But when we have new node then Kibana Replica node will get auto set to 1. Because of property ***AutoExpandReplicas***. This dynamically changing the values based on number of nodes getting added.
+
+To see all *Shards*
+```
+GET /_cat/shards?v
+```
+![Indices](shard_data.png)
+
+In the above image unassigned means there is no node assigned to that Replica Shard. There is no use of having Replica Shard if no nodes are configured.
+
+
+
 
 
 
