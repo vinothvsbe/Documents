@@ -135,11 +135,109 @@ GET /_cat/shards?v
 In the above image unassigned means there is no node assigned to that Replica Shard. There is no use of having Replica Shard if no nodes are configured.
 
 
+> No matter how many shards we create if there is no proper nodes then soon or later CPU will run out of its space
+
+Replication will kick in only if there are more than one node.
+
+**Configuring Nodes**
+Ideal approach to configure nodes is to download elastic search for each adn every node. But if we are in development mode then we can do that in different way.
 
 
+To configure nodes to the existing cluster, just node name need to be specifed in elasticsearch folder -> config -> elasticsearch.yml file. ***node.name*** need to be configured. For production best practice is we need to specify cluster as well. But if we dont specify by default whatever cluster is available it will get added there.
+
+**Another approach to add node**
+```
+bin/elasticsearch.bat -Enode.name=node-2 -Epath.data=./node-2/data -Epath.logs=./node-2/logs
+```
+
+>Elastic search clusters consist of one or more nodes. Data is stored on shards and shards are stored on nodes.
+
+##Node-Roles
+
+**Master**
+- A node may be elected as the cluster's master node
+- A master node is responsible for creating and deleting indices, among other
+- A node with this role will not automatically become the master node
+  - Unless there are no other master-eligible nodes
+- May be used for having dedicated master nodes
+  - Useful for large clusters
+
+  ```
+  node.master: true|false
+  ```
+
+**Data**
+- Enables a node to store data
+- Storing data includes performing queries related to that data such as search queries
+- For relatively small clusters this role is almost always enabled
+- Useful for having dedicated master nodes
+- Used as part of configuring dedicated master node
+
+```
+node.data: true|false
+```
+
+**Ingest**
+- Enables a node to run a pipeline
+- Ingest a pipelines are a series of steps (processors) that are performed when indexing documents.
+  - processors may manipulate documents e.g. resolving an IP to Iat/Ion
+- A simplified version of logstash, directly within Elasticsearch
+- Mainly for simple data transformation
+- If there are more document to ingest then it is relatively more complicated
+- Filebeat is using ingest 
+- This role is useful for running dedicated ingest nodes
+
+```
+node.ingest: true|false
+```
+
+**Machine Learning**
+- node.ml identifies  a node as a machine learning node
+  - This let the node run machine learning jobs
+- xpack.ml.enabled enables or disables the machine learning API for the node
+- Useful for running ML jobs that don't affect other tasks
 
 
+```
+node.ml: true|false
+xpack.ml.enabled: true|false
+```
+
+**Coordination nodes**
+- Coordination refers to the distribution of queries and the aggregation of results
+- Useful for coordination-only nodes (for large clusters)
+- Configured by disabling all other roles
+
+```
+node.master : false
+node.data : false
+node.ingest: false
+node.ml: false
+xpack.ml.enabled: false
+```
+
+**Voting-only node**
+- A nodewith this role will participate in the voting of new master node.
+- The node cannot be elected as the master node itself, though.
+- The node cannot be elected as the master node itself, though.
+- Only used for large clusters
+
+```
+node.voting_only : true|false
+```
 
 
+![Node Roles](noderoles.png)
 
+In the above screenshot ***20T3S1GPC22SBS3*** is master
+
+And also in master column we can see '*' symbol to mention, that particular node is master node.
+
+Modifying the roles of node depends on Large Clusters
+Usually we will be chaning other things like 
+  - No of nodes
+  - No of Shards
+  - No of Replica Shards
+
+>Only change node if you know what you are doing :smiley:
 
