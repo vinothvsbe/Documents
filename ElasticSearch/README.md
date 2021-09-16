@@ -152,7 +152,7 @@ bin/elasticsearch.bat -Enode.name=node-2 -Epath.data=./node-2/data -Epath.logs=.
 
 >Elastic search clusters consist of one or more nodes. Data is stored on shards and shards are stored on nodes.
 
-##Node-Roles
+### Node-Roles
 
 **Master**
 - A node may be elected as the cluster's master node
@@ -240,4 +240,80 @@ Usually we will be chaning other things like
   - No of Replica Shards
 
 >Only change node if you know what you are doing :smiley:
+
+**Creating and Deleting Indices**
+
+To create the new index
+```
+PUT /products
+```
+To delete existing index
+```
+DELETE /products
+```
+To configure number of shards and replicas while creating index
+```
+PUT /products
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 2
+  }
+}
+```
+>auto_create_index:true, will auto create index if the index is not present while sending request. But best practice is creating it explicitly.
+
+To add document to index
+
+```
+POST /products/_doc
+{
+  "name":"Coffee Maker",
+  "price":64,
+  "in_stock":10
+}
+```
+To update document into index
+```
+PUT /products/_doc/100
+{
+  "name":"Toaster",
+  "price":49,
+  "in_stock":4
+}
+```
+
+To get document detail, should be based on Id
+```
+GET /products/_doc/100
+```
+For the above command you need to know the id.
+
+![Product Detail](get-product.png)
+
+To update a document based on document id
+```
+POST /products/_update/100
+{
+  "doc":{
+    "in_stock":3
+  }
+}
+```
+> During post inside *doc* if we pass any field which is doesnt not exist already then that will be added as new field
+
+```
+POST /products/_update/100
+{
+  "doc":{
+    "tags":["electronics"]
+  }
+}
+```
+
+**Documents are immutable**
+- Elastic search documents are immutable
+- We actually didn't modify the document rather we replaced the document with new values
+- The Update API looked like something got updated but actually behind the scene it has created a new document and replaced the entire document with old document
+
 
