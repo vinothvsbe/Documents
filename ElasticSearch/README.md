@@ -1,5 +1,5 @@
 # Elastic Search
-
+[link text](#abcd)
 **Node** - is an instance of Elastic Search. Each node will store a part of our data. Each node belongs to cluster
 
 **Cluster** - Cluster can have multiple dependant nodes. We can run multiple clusters of Elastic Search.  For Eg: We can have Ecommerce Product cluster and Performance monitoring clusters etc.
@@ -317,3 +317,41 @@ POST /products/_update/100
 - The Update API looked like something got updated but actually behind the scene it has created a new document and replaced the entire document with old document
 
 
+**Scripted Updates**
+Scripted update is having multiple lines of code in single script.
+It is not necessary to remember each and every value, everything can be updated.
+
+```
+POST /products/_update/100
+{
+  "script": {
+    "source": "ctx._source.in_stock--"
+  }
+}
+```
+Here in the above code we are trying to get the value of *in_stock* and then we are trying to decrement it.
+
+```
+POST /products/_update/100
+{
+  "script": {
+    "source": "ctx._source.in_stock = 10"
+  }
+}
+```
+Th above query will set the value to 10.
+If you want to pass parameter to the script then *params* keyword should be used
+
+```
+POST /products/_update/100
+{
+  "script": {
+    "source": "ctx._source.in_stock -= params.quantity",
+    "params": {
+      "quantity":4
+    }
+  }
+}
+```
+<a name="abcd"></a>
+Here *quantity* is a parameter. So to access parameter inside the query *params.quantity* is the keyword to be used.
