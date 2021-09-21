@@ -1,5 +1,5 @@
 # Elastic Search
-[link text](#abcd)
+[ScriptedUpdates](#ScriptedUpdates)
 **Node** - is an instance of Elastic Search. Each node will store a part of our data. Each node belongs to cluster
 
 **Cluster** - Cluster can have multiple dependant nodes. We can run multiple clusters of Elastic Search.  For Eg: We can have Ecommerce Product cluster and Performance monitoring clusters etc.
@@ -317,7 +317,7 @@ POST /products/_update/100
 - The Update API looked like something got updated but actually behind the scene it has created a new document and replaced the entire document with old document
 
 
-**Scripted Updates**
+**<a name="ScriptedUpdates"></a>Scripted Updates**
 Scripted update is having multiple lines of code in single script.
 It is not necessary to remember each and every value, everything can be updated.
 
@@ -353,5 +353,5 @@ POST /products/_update/100
   }
 }
 ```
-<a name="abcd"></a>
+
 Here *quantity* is a parameter. So to access parameter inside the query *params.quantity* is the keyword to be used.
