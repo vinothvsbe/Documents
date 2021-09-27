@@ -2,7 +2,7 @@
 All my learning docs are located here
 
 - [Microsoft Azure](Cloud/README.md)
-- [Software Architecture Security](Security/README.md)
+- [Software Architecture Security](Architecture/Security/README.md)
 - [Microservice Architecture](Architecture/Microservices/README.md)
 - [Docker](Docker/README.md)
 - [Git](Git/README.md)
@@ -13,3 +13,5 @@ All my learning docs are located here
 
 - [Migration]()
     - [Angular](Migration/Angular/README.md)
+- [Security](Security/README.md)
+    - [Web](Security/Web/README.md)
