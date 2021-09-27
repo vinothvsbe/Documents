@@ -340,7 +340,7 @@ POST /products/_update/100
 }
 ```
 Th above query will set the value to 10.
-If you want to pass parameter to the script then *params* keyword should be used
+If you wantt to pass parameter to the script then *params* keyword should be used
 
 ```
 POST /products/_update/100
@@ -355,3 +355,40 @@ POST /products/_update/100
 ```
 
 Here *quantity* is a parameter. So to access parameter inside the query *params.quantity* is the keyword to be used.
+
+If you dont want certain operation to happen then we can use
+
+```
+POST /products/_update/100
+{
+  "script": {
+    "source": """
+    if(ctx._source.in_stock==0){
+        ctx.op='noop';
+    }
+    ctx._source.in_stock--;
+    """
+  }
+}
+```
+*noop* is nothing but no operation. That need to be assigned to contxt operation which is *ctx.op*. There is another operation as well which is *delete*. Delete will delete the document itself
+
+**Upserts**
+Update and Insert combination. If the document already exist then it will get updated. If the document is not found then it will create new document.
+
+
+```
+POST /products/_update/101
+{
+  "script": {
+    "source": "ctx._source.in_stock++"   
+  },
+  "upsert":{
+    "name":"Blender",
+    "price":399,
+    "in_stock":5
+  }
+}
+
+```
+In the above query, *script* part will execute if the document is present, and *upsert* part will execute if the document is not present.
