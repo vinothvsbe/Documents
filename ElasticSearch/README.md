@@ -340,7 +340,7 @@ POST /products/_update/100
 }
 ```
 Th above query will set the value to 10.
-If you want to pass parameter to the script then *params* keyword should be used
+If you wantt to pass parameter to the script then *params* keyword should be used
 
 ```
 POST /products/_update/100
@@ -355,3 +355,142 @@ POST /products/_update/100
 ```
 
 Here *quantity* is a parameter. So to access parameter inside the query *params.quantity* is the keyword to be used.
+
+If you dont want certain operation to happen then we can use
+
+```
+POST /products/_update/100
+{
+  "script": {
+    "source": """
+    if(ctx._source.in_stock==0){
+        ctx.op='noop';
+    }
+    ctx._source.in_stock--;
+    """
+  }
+}
+```
+*noop* is nothing but no operation. That need to be assigned to contxt operation which is *ctx.op*. There is another operation as well which is *delete*. Delete will delete the document itself
+
+**Upserts**
+Update and Insert combination. If the document already exist then it will get updated. If the document is not found then it will create new document.
+
+
+```
+POST /products/_update/101
+{
+  "script": {
+    "source": "ctx._source.in_stock++"   
+  },
+  "upsert":{
+    "name":"Blender",
+    "price":399,
+    "in_stock":5
+  }
+}
+
+```
+In the above query, *script* part will execute if the document is present, and *upsert* part will execute if the document is not present.
+
+**Replacing the documents**
+Replacing document is as easy as just replacing the verb from *POST* to *PUT*
+```
+PUT /products/_doc/100
+{
+  "script":{
+    "name":"Toaster_New",
+    "price":79,
+    "in_stock":20
+  }
+}
+```
+
+**Delete the document**
+Deleting the document is as easy as changing the verb to DELETE
+
+```
+DELETE /products/_doc/101
+```
+
+**Understanding Routing**
+- How does elastic search knows which Shard the data needs to be stored?
+- How does elastic search knows which Shard the data needs to be extracted from?
+
+Routing is the answer for above questions. Routing is the process of resolving a shard for the document.
+
+When we index a document elastic search uses a simple formula to select Shard to place data.
+
+>shard_num= hash(_routing) % num_primary_shards
+
+Because of the above formula we will not be able to change the number of Shards once a document is indexed. If number of Shards changes then based on above forumla even the location where it resides also change will result in different shard number.
+
+*It is possible to customize routing.*
+
+**How elastic search reads data?**
+Whenever a get request is raised the request will be received by Node which coordination and get the data for requestor.
+A node which coordination is called Coordination node.
+Refer the image below.
+
+When coordination node picks document from the Shards, it will try to evaluate which copy of document is health among replica shards
+**How elastic search writes data?**
+Request goes to coordination node and then it will be passed to Primary Shards as shown below.
+
+
+Once Primary shard has validated the request then same document will be replicated in Replication shards.
+
+This operation will succeed even if the replication is failed once it is successful by Primary Shards.
+
+Elastic search is distributed, so every document when it is indexed locally then it replicates the same index to Replica Shards as well. During copying of index to Replica Shards if Primary Shard goes down then it will Elastic search will go to recovery mode.
+
+>In recovery mode if the Primary Shard is down then one of the Replica Shard will be promoted as Primary Shard.
+
+**Primary terms and Sequenece Number**
+- A way to distinguish between old and new prmiary shards
+- Essentially a counter for how many times the primary shard has changed
+- The primary term is appended to write operations
+
+**Recovery when a primary shard fails**
+- Primary terms and sequence numbers are the key when elastic search needs to recover from a primary shard failure
+  - Enables Elastic Search to more efficiently figure out which write operations need to be applied
+- For large indices, this process is really expensive.
+
+**Global and local checkpoints**
+- Essentially Sequence Numbers
+- Each replication group has a global checkpoint
+- Each replica shard has a local checkpoint
+- Global Checkpoints 
+  - The Sequence numbers that all active shards within a replication group has been aligned at least up to
+- Local Checkpoints
+  - The sequence number of the last write operation that was performed.
+
+**Understanding document versioning**
+Elastic search keeps the versioning of the document. 
+- Not a version history of document but just the last operation
+- Elastic search stores an _version metadata field with every document
+  - The value is an integer
+  - It is incremented by one when modifying a document
+  - The value is retained for 60 seconds when deleting a document
+    - Configured with the index.gc_deletes settings
+  - The _version field is returned when retrieving document
+  [Add Image]
+  
+**Types of versioning**
+- Default Versioning - Internal Versioning
+- External Versioning Type
+  - Useful when versions are maintained outside of Elastic search
+  - E.g. when documents are all stored in RDBMS
+ [Add Image]
+
+**Use of Versioning?**
+- You can tell how many times the document is modified
+- It was previously a way to optimise the concurrency control
+
+**Optimistic concurrency control**
+- Prevent overwriting documents inadvertently due to concurrent operations
+- There are many scenarios in which that can happen
+
+
+
+
+
