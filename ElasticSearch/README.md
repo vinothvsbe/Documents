@@ -489,8 +489,239 @@ Elastic search keeps the versioning of the document.
 **Optimistic concurrency control**
 - Prevent overwriting documents inadvertently due to concurrent operations
 - There are many scenarios in which that can happen
+- If two customers checksout the same product at a same time then *in_stock* field need to be updated for the second person.
+- We always make sure the updated document is fetched.
+- This is where versioning comes in to picture
+[Add Image]
+
+The old approach is to use *_version* parameter along with the query parameter. In this case we can easily identify if the version is not matching with the one which is present in source system then it will throw error.
+
+It works well in usual cases but there are few flaws. That is why in ES we are using two fields. 
+- Primary Terms
+- Sequence No's
+
+```
+{
+  ...
+  "_primary_term":1,
+  "_seq_no":71
+}
+```
+**How do we handle failures?**
+- Sending write requests to Elasticsearch concurrently may overwrite changes made by other concurrent process
+- Traditionally, _the version field was used to prevent this
+- Today we use the _primary_term and _seq_no fields
+- Elastic search will reject write operation if it contains the wrong primary term or sequence number
+  - This should be handled at application level
+  ```
+  POST /products/_update/102?if_primary_term=5&if_seq_no=17
+  {
+    "script": {
+      "source": "ctx._source.in_stock = 101"
+    }
+  }
+  ```
+
+  if we try to update the same thing again with the same primary term and *Seq_no* then following error will occur because when it was updated first time *seq_no* would have changed.
+  >{
+  "error" : {
+    "root_cause" : [
+      {
+        "type" : "version_conflict_engine_exception",
+        "reason" : "[102]: version conflict, required seqNo [17], primary term [5]. current document has seqNo [18] and primary term [5]",
+        "index_uuid" : "xBHWarPPSeGxRhjBUvj52w",
+        "shard" : "0",
+        "index" : "products"
+      }
+    ],
+    "type" : "version_conflict_engine_exception",
+    "reason" : "[102]: version conflict, required seqNo [17], primary term [5]. current document has seqNo [18] and primary term [5]",
+    "index_uuid" : "xBHWarPPSeGxRhjBUvj52w",
+    "shard" : "0",
+    "index" : "products"
+  },
+  "status" : 409
+}
+
+**Update by Query**
+So far we have been updating single document with the help of Id. But now we are going to look how to update multiple documents.
+All queries are based on three concepts
+- Primary Terms
+- Sequenece Numbers
+- Optimistic concurrency control
+
+```
+POST /products/_update_by_query
+{
+  "script": {
+    "source": "ctx._source.in_stock--"
+  },
+  "query": {
+    "match_all": {}
+  }
+}
+```
+[Add Image]
+Whenever a query is sent for modiying document following process takes place
+- A snapshot of index will be taken first
+- All bulk update will be run against each and every Indexes one by one
+- Incase if any query failed in any shards then it will not roll back entire update query
+  - Thats why we have Optimistic Concurrency control
+  - Primary Terms and Sequence Number will come in to picture
+- Snapshot which taken initially will be referred, if there is any Shards where this numbers are different then it will not update those shards. Only matching will be updated during retrying..
+- Every query will be retried 10 times before Aborting
+
+**Delete by query**
+Deleting multiple items based on pattern. *As of now the pattern is just everything*
+
+```
+POST /products/_delete_by_query
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+
+**Batch Processing**
+Batch processing is insertng, updating, deleting multiple documents at a time, that is done with the bulk API.
+
+Bulk API expects the format **NDJSON**.
+
+```
+POST /_bulk
+{ "index": {"_index": "products", "_id":200} }
+{ "name": "Apple Airpord", "price": 8999, "in_stock":2000 }
+{ "create": {"_index": "products", "_id":201} }
+{ "name": "Apple iwatch", "price": 13860, "in_stock":5000 }
+```
+Here difference between *index* and *create* is during *index* if record found with that id, document will be replaced or else it will create. Whereas in *create* if document exists it will throw error
+
+```
+POST /_bulk
+{ "update": {"_index":"products","_id":201} }
+{ "doc": {"price":14999} }
+{ "delete": {"_index":"products", "_id":200} }
+```
+> For Delete we dont have to enter second line
+
+The same query can be modified like below if we are targeting all these bulk queries only on one single index then below query can be used
+
+```
+POST /products/_bulk
+{ "update": {"_id":201} }
+{ "doc": {"price":14999} }
+{ "delete": {"_id":200} }
+```
 
 
+**Things to be aware of when using Bulk API**
+- The HTTP Content-Type header should be set as follows
+  - Content-Type: application /x-ndjson
+  - application/json is accepted but thats not the correct way
+- The console tool handles this for us
+  - The Elasticsearch SDKs also handles this for us
+  - Using HTTP clients, we need ot handle this by ourselves
+- Each line must end with a newline character (\n or \r\n)
+  - This includes the last line
+    - In a text editor, this means that the last line should be empty
+  - Automatically handled with the Console tool
+  - Typically a script will generate bulk file, in which case you need to handle this
+- A failed action will not affect other actions
+  - Neither will the bulk request as a whole be aborted
+- The bulk API returns details information about each action
+  - Insepect each item by *items* key to see if a given action succeed 
+    - The order is the same as the actions with the request
+  - The errors key conveniently tells us if any error occured.
+
+**When should we use Bulk API**
+- When you need to perform lots of write operations at the same time
+  - E.g when importing data or modifying lots of data
+- The Bulk API is more efficient than sending individual write requests.
+  - A lot of round trip are avoided
+- Routing is used to resolve a document's shard
+  - The routing can be customized if necessary
+The Bulk API supports optimistic concurrency control
+  - Include the if_primary_term and if_seq_no parameters within the action metadata.
+
+### Mapping and Analysis
+Text analysis is analyzing text while indexing document. The result is stored in data structure that are efficient for searching.
+The *_source* object cannot be used for searching document because which contains raw data.
+**Analyzer** helps in analyzing the text value and used to store in searchable data structure
+  - Character Filters
+  - Token Filters
+  - Tokenizer
+  
+**Character Filters**
+- Adds, removes or change characters
+- Analyzer contain zero or more character filters
+- Character filters are specified in orders which they are specified
+- Example *html_strip* filter
+  - Input: "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp; and I <strong>love</strong> you!"
+  - Output: I'm in a good mood - and i love you!
+
+**Tokenizer**
+An analyzer contain atleast one Tokenizer. Tokenizer splits string in to tokens.
+Example:
+**Input:** "I REALLY like beer!"
+**Output:** ["I","REALLY","like","beer"]
+
+**Token Filters**
+-  Receive the output of the tokenizer as a input (i.e.tokens)
+- A token filter can add remove or modify tokens
+- An analyzer contains zero or more token filters
+- Token filters are applied in the order in which they are specified
+- Example (lowercase filter)
+  - **Input:** ["I","REALLY","like","the","beer"]
+  - **Output:** ["I","really","like","the","beer"]
 
 
+There are lot of filtes and tokenizers available. If we want even we can build custom filters as well
 
+**Using the analyze API**
+Below is the API we can use it to check
+```
+POST /_analyze
+POST /_analyze
+{
+  "text": ["This is just a simple,Text"],
+  "analyzer": "standard"
+}
+
+```
+Here the analyzer used is *standard*. We can even put some other analyzer if needed.
+
+The algorithm is not splitting string based on white space, actually it does more than that.
+
+
+The below query does similar to the above one
+
+```
+POST /_analyze
+{
+  "text": ["This is just a simple,TEXT"],
+  "char_filter": [],
+  "tokenizer": "standard",
+  "filter": ["lowercase"]
+}
+```
+
+**Understanding inverted indices**
+This is created and maintained by Apache Lucene and not Elastic Search.
+- The datastructure depends on fields datatype
+- Ensures efficient data access - E.g. Searches
+- Elasticsearch makes sure that more than one data structure used because of that ES is able to provide better search.
+  - For Eg, Searching for given term is handled differently than Aggregating data
+- Inverted index is the essentially the mapping between terms
+  - Terms means token that we created with Analyzer
+  - Token terminology is used in Analyzer
+[Add Image]
+- ES also has relevance score stored for Inverted indices
+- For every text field inverted indices will be created.
+[Add Image]
+- Only text fields are in this format. If it is numeric, date or special fields then it is stored in BKD trees datastructure.
+
+**Introduction to Mapping**
+Mapping defines the strcutre of document and how they are indexed and stored. 
+- Also used to configure how values are indexed.
+- Similar to a table's schema in a relational database
