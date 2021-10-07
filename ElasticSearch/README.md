@@ -432,10 +432,13 @@ Whenever a get request is raised the request will be received by Node which coor
 A node which coordination is called Coordination node.
 Refer the image below.
 
+![ES_Data_Read](es_data_read.png)
+
 When coordination node picks document from the Shards, it will try to evaluate which copy of document is health among replica shards
 **How elastic search writes data?**
 Request goes to coordination node and then it will be passed to Primary Shards as shown below.
 
+![ES_Writes_Data](es_writes_data.png)
 
 Once Primary shard has validated the request then same document will be replicated in Replication shards.
 
@@ -473,14 +476,14 @@ Elastic search keeps the versioning of the document.
   - The value is retained for 60 seconds when deleting a document
     - Configured with the index.gc_deletes settings
   - The _version field is returned when retrieving document
-  [Add Image]
+ ![ES_Document_Versioning](es_document_versioning.png)
   
 **Types of versioning**
 - Default Versioning - Internal Versioning
 - External Versioning Type
   - Useful when versions are maintained outside of Elastic search
   - E.g. when documents are all stored in RDBMS
- [Add Image]
+ ![ES_Version_Type](es_version_type.png)
 
 **Use of Versioning?**
 - You can tell how many times the document is modified
@@ -492,7 +495,7 @@ Elastic search keeps the versioning of the document.
 - If two customers checksout the same product at a same time then *in_stock* field need to be updated for the second person.
 - We always make sure the updated document is fetched.
 - This is where versioning comes in to picture
-[Add Image]
+![ES_Version_Use](es_version_use.png)
 
 The old approach is to use *_version* parameter along with the query parameter. In this case we can easily identify if the version is not matching with the one which is present in source system then it will throw error.
 
@@ -561,7 +564,7 @@ POST /products/_update_by_query
   }
 }
 ```
-[Add Image]
+![ES_Update_Query](es_update_query.png)
 Whenever a query is sent for modiying document following process takes place
 - A snapshot of index will be taken first
 - All bulk update will be run against each and every Indexes one by one
@@ -715,10 +718,10 @@ This is created and maintained by Apache Lucene and not Elastic Search.
 - Inverted index is the essentially the mapping between terms
   - Terms means token that we created with Analyzer
   - Token terminology is used in Analyzer
-[Add Image]
+![ES_Inverted_Index](es_inverted_index.png)
 - ES also has relevance score stored for Inverted indices
 - For every text field inverted indices will be created.
-[Add Image]
+![ES_Document_Text_Index](es_document_text_index.png)
 - Only text fields are in this format. If it is numeric, date or special fields then it is stored in BKD trees datastructure.
 
 **Introduction to Mapping**
