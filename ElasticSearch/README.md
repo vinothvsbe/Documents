@@ -725,6 +725,258 @@ This is created and maintained by Apache Lucene and not Elastic Search.
 - Only text fields are in this format. If it is numeric, date or special fields then it is stored in BKD trees datastructure.
 
 **Introduction to Mapping**
-Mapping defines the strcutre of document and how they are indexed and stored. 
+Mapping defines the structure of document and how they are indexed and stored. 
 - Also used to configure how values are indexed.
 - Similar to a table's schema in a relational database
+
+Basic elastic search datatypes
+- **object** - Any json object. Objects can be nested. *Properties* are used in place of types for other datatypes. Apache Lucene does not supportobject. Objects are transformed into compatible json for indexing.
+- **boolean** - 
+- **text**
+- **integer**
+- **long**
+- **date**
+- **float**
+- **short**
+- **double**
+- **ip**
+
+**Nested DataTypes** are nothing but placing the related object inside main json object.
+``` json
+{
+  "name":"Coffee Maker",
+  "reviews":[
+    {
+      "rating": 5.0,
+      "author": "Average Joe",
+      "description":"Haven't slept for days .. Amazing"
+    },
+    {
+      "rating": 3.5,
+      "author": "John doe",
+      "description":"Could be better :("
+    }
+  ]
+}
+```
+
+Here nested objects are stored as *Hidden documents*. These documents wont show up in query. Each adn every nested objects are stored in hidden document format. And there will also be main documents where these hidden documents are refferred
+
+**Keyword** datatype is used for exact matching. Since this is used for exact mathing this datatype is used for Aggregation, Sorting and Filtering.
+
+E.g Searching for articles with a status of PUBLISHED.
+
+> If you want to perform FULL TEXT search then *text* data type should be used.
+
+**How Keyword datatype works?**
+- *keyword* fields are analyzed with *keyword analyzer*
+- The *keyword* analyzer is a no-op analyzer
+  - It outputs the unmodified string
+
+In *text* data type each and every word is broken and stored in inverted indices. Whereas in *keyword* data type each and every sentence is considered as one complete token and stored as one index. 
+
+> In *Keyword* data type even symbols will not be removed. It wont convert from uppercase to lowercase. Mainly used for searching email address, product numbers etc.
+
+**Understanding type coercion**
+- Datatypes are inspected while indexing a data
+  - They are validated and some invalid values are rejected
+  - Trying to index an object for a text field
+- Sometimes providing the wrong data type is ok
+```
+PUT /coercion_test/_doc/1
+{
+  "price":5.4
+}
+```
+Here the above datattype will default to Float
+```
+PUT /coercion_test/_doc/1
+{
+  "price":"5.4"
+}
+```
+In the above query still it will index 5.4 as Float but _source will show it as string.
+```
+PUT /coercion_test/_doc/1
+{
+  "price":"5.4m"
+}
+```
+In the above query it will throw error that it is not able to convert in to Float.
+
+> By default it will always try to do coercison if dataype is not supplied. This is called dynamic mapping. The preferred method is to use proper data type so that proper mapping will take place.
+
+**Understanding Arrays**
+There is no such thing as arrays in Elastic Search.
+
+Whatever is there inside the array will be concatenated and tokenized
+
+```
+POST /_analyze
+{
+  "text":["This is text1","this is TEXT2"],
+  "analyzer": "standard"
+}
+```
+
+the result will be 
+```json
+{
+  "tokens" : [
+    {
+      "token" : "this",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "is",
+      "start_offset" : 5,
+      "end_offset" : 7,
+      "type" : "<ALPHANUM>",
+      "position" : 1
+    },
+    {
+      "token" : "text1",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "<ALPHANUM>",
+      "position" : 2
+    },
+    {
+      "token" : "this",
+      "start_offset" : 14,
+      "end_offset" : 18,
+      "type" : "<ALPHANUM>",
+      "position" : 3
+    },
+    {
+      "token" : "is",
+      "start_offset" : 19,
+      "end_offset" : 21,
+      "type" : "<ALPHANUM>",
+      "position" : 4
+    },
+    {
+      "token" : "text2",
+      "start_offset" : 22,
+      "end_offset" : 27,
+      "type" : "<ALPHANUM>",
+      "position" : 5
+    }
+  ]
+}
+```
+
+- All of the values within the array should have same data type
+- We can actually mix and match datatype only if we have an option to coerce
+For Eg:
+  - [1,2,3] - Correct
+  - [1,"2",3] - Correct
+  - [1,2.3,3] - Correct // This will take only first segment and digits beyond decimal will be ignored
+  - [1,"two",3] - Incorrect // Will not be possible to Coerce
+- Coercion only work if the fields are already mapped
+- Nested Array is also possible
+  - For Eg: [1,[2,3]] becomes [1,2,3]
+
+> Remember to use the Nested Array only if you need to query the objects independently. If you dont want to query data independently then *object* datatype must be used.
+
+**Adding explicit mapping**
+Creating the explicit mapping
+```
+PUT /reviews
+{
+  "mappings":{
+    "properties": {
+      "rating": {"type": "float"},
+      "content": {"type":"text"},
+      "product_id": {"type": "integer"},
+      "author": {
+        "properties": {
+          "first_name": {"type":"text"},
+          "last_name": {"type":"text"},
+          "email": {"type":"keyword"}
+        }
+      }
+    }
+  }
+}
+```
+Indexing document
+```
+PUT /reviews/_doc/1
+{
+  "rating": 5.0,
+  "content": "Outstanding work.... Commendable",
+  "product_id": 123,
+  "author": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": {}
+  }
+}
+```
+
+If you see above query we have given object in email which is going to throw following error
+
+>failed to parse field [author.email] of type [keyword] in document with id '1'. Preview of field's value: '{}'
+
+Strict data type
+
+```
+PUT /reviews/_doc/1
+{
+  "rating": 5.0,
+  "content": "Outstanding work.... Commendable",
+  "product_id": 123,
+  "author": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "johndoe123@example.com"
+  }
+}
+```
+This will be successfully indexed.
+
+**Retrieving Mapping**
+To see the existing mapping
+
+```
+GET /reviews/_mapping /*This will give you entire index mapping*/
+GET /reviews/_mapping/field/content /*This will get you mapping only for that particular field*/
+GET /reviews/_mapping/field/author.first_name /*This will give you the content of the nested object with dot('.') operator*/
+```
+
+**Using dot notation in field name**
+We can simply use dot notation as well instead of doing nested operation like below, which will yield similar result
+
+```
+PUT /reviews_dot_notation
+{
+  "mappings":{
+    "properties": {
+      "rating": {"type": "float"},
+      "content": {"type":"text"},
+      "product_id": {"type": "integer"},
+      "author.first_name": {"type":"text"},
+      "author.last_name": {"type":"text"},
+      "author.email": {"type":"keyword"}
+    }
+  }
+}
+```
+
+**Adding mapping to the exisitng mapping**
+If we want to add new field mapping to already created index then we can directly give properties instead of mapping like shown below
+
+```
+PUT /reviews/_mapping
+{
+  "properties":{
+    "created_at":{
+      "type":"date"
+    }
+  }
+}
+```
