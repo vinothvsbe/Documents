@@ -980,3 +980,164 @@ PUT /reviews/_mapping
   }
 }
 ```
+
+**How elastic search understand dates**
+- Three formates are supported
+  - Date without time
+  - Date with time
+  - Millisecond since the epoc(long)
+- UTC timezones assumed if none is specified
+- Dates must be formatted according to ISO 8601 specification
+
+**How missing fields are handled**
+- All ElasticSearch fields are optional
+- Unlike relational DB we dont have to specify *NULL* values
+- Some integrity checks needs to be done at application level
+- Adding a field mapping does not make a field required
+- Search automatically handles missing field
+
+
+**Overview of mapping parameters**
+Important mapping paramemters
+- *Format* Parameter - Used to customize Format for date fields
+  - Recommended approach is to use default format whenever possible
+    - "strict_date_optional_time||epoch_millis"
+  - Using Java's DateFormatter syntax
+    - Eg: dd/MM/yyyy
+  - Using builtin formats
+    - Eg: epoch_second
+- *Properties* parameter - Defines nested fields for object and nested fields
+- *coerce* parameter - Used to enable or disable type coercionof values
+
+**Introduction to doc_values**
+- Elastic search makes use of several data structures
+  - No single data structure serves all purpose
+- Inverted indices are excellent for searching text
+  - They don't perform well for many other data access patterns
+- "Doc values" is another data structure used by Apache Lucene
+  - Optimized for a different access pattern (document -> term)
+
+- Essentially an "uninverted" inverted index
+- Used for sorting, aggregations and scripting
+- An additional data structures, not a replacement
+- Elastic search automatically queries the appropriate data structure
+
+**Disabling doc_values**
+- Set the *doc_values* parameter to *false* to save disk space
+  - The reason is usually doc_value will help to increase the speed of the processing by storing the desired data structure in to the disk
+- Only disable doc values if you wont use aggregation, sorting or scripting
+- Particularly useful for large indices, typically not worth it for small ones
+- Cannot be changed without reindexing documents into new index.
+  - Use with caution and try to anticipate how fields will be queried
+
+```
+PUT /sales
+{
+  "mappings":{
+    "properties":{
+      "buyer_email":{
+        "type":"keyword",
+        "doc_values":false
+      }
+    }
+  }
+}
+```
+
+**Understanding norms parameter**
+- Normalization factos used for relevance score
+- Often we don't just want filter results but also rank them
+  - Eg: Search result on google in page 1 has more relevance than the result in page 5
+- Norms can be disabled to save disk space
+  - Useful for fields that won't be used for relevance scoring
+  - The fields can still be used for filtering and aggregations
+
+```
+PUT /sales
+{
+  "mappings":{
+    "properties":{
+      "tags":{
+        "type":"text",
+        "norms":false
+      }
+    }
+  }
+}
+```
+In the above code we dont need norms whereas name field is required
+
+**Understanding index parameter**
+- Disabling indexing for a field
+- Values are still stored within *_source*
+- Useful if you won't use a field for search queries
+- Saves disk space and slightly improve indexing throughput
+- Often used for time series data
+- Fields with indexing disable can still be used for aggregations
+
+```
+PUT /sales
+{
+  "mappings":{
+    "properties":{
+      "server_id":{
+        "type":"integer",
+        "index":false
+      }
+    }
+  }
+}
+```
+
+**Understanding null_value parameter**
+- NULL value cannot be indexed or searched
+- Use this parameter to replace NULL value to another value(Usually BLANK)
+- Only works for explicit NULL values
+- The replacement value must be of the same data type as the field
+- Does not affect the value stored within _source
+
+```
+PUT /sales
+{
+  "mappings":{
+    "properties":{
+      "partner_id":{
+        "type":"integer",
+        "null_value":false
+      }
+    }
+  }
+}
+```
+**Understanding copy_to parameter**
+- Used to copy multiple field values into "group fields"
+- Simply specify the name of the target field as the value
+
+- Eg: first_name and last_name >> full_name
+- Values are copied, not terms/tokens
+  - The analyzer of the target field is used for the values
+- Target field is not part of _source
+
+```
+PUT /sales
+{
+  "mappings":{
+    "properties":{
+      "first_name":{
+        "type":"text",
+        "copy_to":"full_name"
+      },
+      "last_name":{
+        "type":"text",
+        "copy_to":"full_name"
+      },
+      "full_name":{
+        "type":"text"
+      }
+
+    }
+  }
+}
+```
+
+
