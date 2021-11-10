@@ -1484,3 +1484,14 @@ PUT /_template/access-logs
 ```
 
 With this pattern new index with following name created like access-logs-2021-04, then automatically this settings will be applied.
+
+If we overwrite it with following code. The specific settings will get overridden.
+
+```
+PUT /access-logs-2021-11
+{
+  "settings": {
+    "number_of_shards": 3
+  }
+}
+```
