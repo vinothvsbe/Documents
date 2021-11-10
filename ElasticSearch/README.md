@@ -1141,3 +1141,346 @@ PUT /sales
 ```
 
 
+**Updating existing mappings**
+We cannot change existing mapping because if we do that then Elastic Search may end up changing data structure and that leads to reindexing. So the ideal way is the change the mapping and reindex from top to bottom
+
+**Reindexing document with Reindex API**
+Reindexing can be done with two ways. 
+- First we need to create the new index with desired mapping
+- copy all data from old index to new index. Can be done in two ways
+  - Write custom program to move data
+    - Eg: Python script
+  - using in built elastic search feature **_reindex**. Can be done as below
+
+Step 1: 
+```
+PUT /reviews_new/
+{
+  "mappings" : {
+      "properties" : {
+        "author" : {
+          "properties" : {
+            "email" : {
+              "type" : "keyword",
+              "ignore_above":256
+            },
+            "first_name" : {
+              "type" : "text"
+            },
+            "last_name" : {
+              "type" : "text"
+            }
+          }
+        },
+        "content" : {
+          "type" : "text"
+        },
+        "created_at" : {
+          "type" : "date"
+        },
+        "product_id" : {
+          "type" : "keyword"
+        },
+        "rating" : {
+          "type" : "float"
+        }
+    }
+  }
+}
+```
+
+Step 2:
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews"
+  },
+  "dest": {
+    "index": "reviews_new"
+  }
+}
+```
+
+Step 3: (Optional - To view data in new index)
+```
+GET /reviews_new/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+
+- Changing the data type will not affect how the values are stored in _source 
+- Its common to use _source values from search results
+  - You would probably expect a string for a keyword field
+- We can modify a source value during reindexing
+
+To remove the existing index following query will help
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews"
+  },
+  "dest": {
+    "index": "reviews_new"
+  },
+  "script": {
+    "source": """
+    if (ctx._source.product_id !=null){
+      ctx._source.product_id = ctx._source.product_id.toString();
+    }
+    """
+  }
+}
+```
+
+To delete that index
+
+```
+POST /reviews_new/_delete_by_query
+{
+  "query":{
+    "match_all":{}
+  }
+}
+```
+To get all data from new index review_new
+
+```
+POST /reviews_new/_delete_by_query
+{
+  "query":{
+    "match_all":{}
+  }
+}
+```
+**Advanced reindexing Queries**
+To reindex only subset of source index then following query can be used
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews",
+    "query": {
+      "range": {
+        "rating": {
+          "gte": 4.0
+        }
+      }
+    }
+  },
+  "dest": {
+    "index": "reviews_new"
+  }
+}
+```
+
+**Removing fields**
+- Field mappings cannot be deleted
+- Fields can be left out when indexing document
+- Maybe we want to reclaim disk space used by a field
+  - Already index values still take up disk space
+  - For larger dataset this may be a worthwhile
+    - Assuming that we no longer need the values
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews",
+    "_source": ["content","created_at", "rating"]
+  },
+  "dest": {
+    "index": "reviews_new"
+  }
+}
+```
+
+only "content","created_at" and "rating" fields will be reindexed. 
+If a field need to be renamed while reindexing
+
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews",
+    "_source": ["content","created_at", "rating"]
+  },
+  "dest": {
+    "index": "reviews_new"
+  },
+  "script": {
+    "source": """
+    # Rename 'content' field to 'comment' field
+    ctx._source.comment = ctx._source.remove("content");
+    """
+  }
+}
+```
+if you dont want certain data to be indexed based on values
+
+```
+POST /_reindex
+{
+  "source": {
+    "index": "reviews"
+  },
+  "dest": {
+    "index": "reviews_new"
+  },
+  "script": {
+    "source": """
+    # Dont index values which has rating lesser than 4
+    if(ctx._source.rating < 4.0>){
+      ctx.op = "noop"; # Can also be set to delete
+    }
+    """
+  }
+}
+```
+
+> Query parameter is always performance efficient than using ctx.op
+
+> Reindex api creates snapshot before reindexing data.
+
+- Reindex api performns operations in batches
+  - Just like the Update by Query or Delete by Query
+  - It uses the Scroll API internally.
+  - This is how millions of documents can be reindexed efficiently
+- Throttling can be configured to limit the performance impact
+  - Useful for production clusters
+
+#### Defining field aliases
+To rename just a field name without reindexing then following query can be used
+
+- Point to remember is it wil not change the field name. It just add the calling name
+
+```
+POST /reviews/_mapping
+{
+  "properties": {
+    "comment": {
+      "type": "alias",
+      "path": "content"
+    }
+  }
+}
+```
+
+Now *Comment* is *content*. But if you think that internally content is changed to comment no.
+
+```
+GET /reviews/_search {
+  "query": {
+    "match": {
+      "content": "outstanding"
+    }
+  }
+}
+```
+
+```
+GET /reviews/_search {
+  "query": {
+    "match": {
+      "comment": "outstanding"
+    }
+  }
+}
+```
+
+Both will yield same result. It means that data has not got changed just the calling name got added as one more.
+
+- Field aliases can be updated
+- if you want to change that to different field, simply update *path* parameter.
+- Similar to field aliases, Elasticserch also supports index aliases.
+
+> Aggregating cannot be run on Text datatype. It can be run only on *Keyword* datatype.
+
+> More than one datatype can also be assigned to the particular field. That will allow us to perform different types of searches.
+
+Following queries will help
+
+```
+PUT /multi_field_test
+{
+  "mappings": {
+    "properties": {
+      "description": {
+        "type": "text"
+      },
+      "ingredients": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+
+POST /multi_field_test/_doc
+{
+  "description": "This is the test description for first item",
+  "ingredients": ["Macroon","Carrot","Peas", "Chilli", "Onion", "Turmeric"]
+}
+
+GET /multi_field_test/_search
+{
+  "query": {
+    "match": {
+      "ingredients": "macroon"
+    }
+  }
+}
+
+GET /multi_field_test/_search
+{
+  "query": {
+    "term": {
+      "ingredients.keyword": "Macroon"
+    }
+  }
+}
+```
+Here in last two GET first GET has no case sensitivity and the second GET has case sensitivity. In the second GET we are using Keyword part so case sensitivity is important.
+Text fields are analyzed and inverted index was populated for the terms that are made by. But for *ingredients* field we are using multiple field type, both text and keyword. So for Text text analyzer will be used and for keyword, keyword analyzer will be used. So two indexes will be created only for that field alone.
+
+**Index Templates**
+Index Templates are used to create a settings for indices which matches one or more pattern. Patterns may include wild card patterns (*)
+
+```
+PUT /_template/access-logs
+{
+  "index_patterns": ["access-logs-*"], //This matches pattern
+  "settings": {
+    "number_of_shards": 2 //Number of shards
+  }, 
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "url.original": {
+        "type": "keyword"
+      },
+      "http.request.referrer": {
+        "type": "keyword"
+      },
+      "http.response.status_code": {
+        "type": "long"
+      }
+    }
+  }
+}
+```
+
+With this pattern new index with following name created like access-logs-2021-04, then automatically this settings will be applied.
