@@ -1495,3 +1495,522 @@ PUT /access-logs-2021-11
   }
 }
 ```
+If there are duplicates then create index request configuration will take the precedence over the default one.
+
+![Index Tenplate](index_templates.png)
+
+**Elastic common schema**
+- A specification of common fields and how they should be mapped.
+- Before ECS there was no ohesion between fields names
+- Ingesting logs from nginx would give different field names than Apache
+- ECS means thatcommon fields are named the same thing
+  - E.g. *@timestamp*
+- Use-case independent
+- Groups of fields are referred to as field sets.
+
+Refer ECS documentation online to see more standard fields.
+
+- In, ECS documents are called as Events
+  - ECS doesnt provide fields for non-events(Eg.Products)
+  Product is use case specific, whereas ECS is applicable only on generic world
+- ECS is useful for standard events
+  - WebServer logs
+  - Operating System Metrics
+  - etc
+ - ECS is automatically handled by Elastic search products
+  - If you use them you dont have to actively deal with them
+
+**Introduction to Dynamic Mapping**
+
+![Dynamic Mapping](dynamic_mapping.png)
+
+![Dynamic Mapping Rules](dynamic_mapping_rules.png)
+
+**Combining explicit and dynamic mapping**
+Combining explicit mapping and dynamic mapping is a best choice. 
+```
+PUT /people
+{
+  "mappings":{
+    "properties": {
+      "first_name": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+POST /people/_doc
+{
+  "first_name": "Vinoth",
+  "last_name": "Suresh"
+}
+
+GET /people/_mapping
+
+DELETE /people
+```
+
+The mapping output is as follows
+```json
+{
+  "people" : {
+    "mappings" : {
+      "properties" : {
+        "first_name" : {
+          "type" : "text"
+        },
+        "last_name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+**Configuring dynamic mapping**
+Dynamic mapping auto creates fields based on data and assigns types which best suits
+But if we turn off dynamic mapping like shown below
+```
+PUT /people
+{
+  "mappings":{
+    "dynamic":false, //Dynamic mapping turned off
+    "properties": {
+      "first_name": {
+        "type": "text"
+      }
+    }
+  }
+}
+```
+
+Following are the consequenses of turning Dynamic mapping off
+- New fields are ignored
+  - They are not indexed but still part of _source
+- No inverted index is created for the last_name field
+  - Queriying field gives no results
+- Fields cannot be indexed without mapping
+  - When enabled, dynamic mapping creats one before indexing values
+- New fields should be mapped explicitly
+
+*Another way*
+- ..setting *dynamic* to "strict"
+- Elasticsearch will reject unmapped fields
+  - All fields must be mapped explicitly
+  - Similar to the behavior of relational database
+
+```
+PUT /people
+{
+  "mappings":{
+    "dynamic":"strict",
+    "properties": {
+      "first_name": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+POST /people/_doc
+{
+  "first_name": "Vinoth",
+  "last_name": "Suresh"
+}
+```
+
+In case if the above post query executed, then following error occurs
+```json
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "strict_dynamic_mapping_exception",
+        "reason": "mapping set to strict, dynamic introduction of [last_name] within [_doc] is not allowed"
+      }
+    ],
+    "type": "strict_dynamic_mapping_exception",
+    "reason": "mapping set to strict, dynamic introduction of [last_name] within [_doc] is not allowed"
+  },
+  "status": 400
+}
+```
+![Dynamic Mapping Strict VS True](dynamic_mapping_config.png)
+
+![Dynamic Numeric Detection](numeric_detection.png)
+
+![Dynamic Date Detection](date_detection.png)
+
+**Dynamic Templates**
+
+![Matching Types](matching_types.png)
+
+
+![Dynamic template types example 1](dynamic_template_types_example_1.png)
+
+
+*match* and *unmatch* parameters
+- Used to specify conditions for field names
+- Field names must match condition specifiedby the match parameter
+- *unmatch* is used to exclude fields that were matched by the *match* parameter
+- Both parameters supports patterns with wildcard(*)
+![Match Unmatch parameters](match_unmatch_parameter.png)
+![Match Unmatch Regular Expression](match_unmatch_regex.png)
+
+- These parameters evaluate full field paths
+  - Not just the field names
+- This is dot notation that you saw earlier
+  - Eg: name.first_name
+
+
+![Match Unmatch CopyTo](match_unmatch_copyto.png)
+![Dynamic Template - Dynamic Type](dynamic_template_dynamic_type.png)
+
+- Index templates apply mappings and index settings for matching indices
+  - This happens when indices are created and their namesatch a pattern
+
+**Mapping Recommendations**
+- Dynamic mappings is convinent but often not a good idea in production
+- Save disk space with optimized mappings when storing many documents
+- Set "dynamic" to "strict" not false
+  - Avoid surprises and unexpected results
+- Don't always map stringsas both *text* and *keyword*
+  - Typically only one is needed
+  - Each mapping requires disk space
+- Do you need to perform full-text searches?
+  - Add a text mapping
+- Do you need to do aggregations, sorting or filtering on exact values?
+  - Add a keyword mapping
+- Coercion forgives you for not doing the right thing.
+- Try to do the right thing instead
+- Always use correct data types whenever possible
+- Use appropriate numeric data types
+- For whole numbers the integerdata type might be enough
+  - long can store large numbers, but also uses more disk space
+- For decimal numbers, the floated data type might be precise enough
+  - double stores numbers with high precision but uses 2x disk space
+  - Usually, float provides enough precision
+
+**Mapping Parameters**
+- Set *doc_values* to *false* if you don't need sorting, aggregations and scripting
+- Set *norms* to *false* if you don't need relevance scoring.
+- Set *index* to *false* if you dont need to filter on values
+  - You can still do aggregations, e.g for time series data
+- Probably only worth the effort when sorting lots of documents
+  - Otherwise its probably an over complication
+- Worst case scenario you will need to reindex documents
+
+**Stemming and Stop words**
+![Without Stemming](without_stemming.png)
+
+- Stemming is the process of reducing the words to their root form
+  - E.g *Loved* -> *love* and *drinking* -> *drink*
+
+What happens if we apply stemming to the whole sentence. Consider following sentence
+> I Loved drinking bottles of wine on last year's vacation.
+
+The above stemmed sentences will get converted to 
+
+> I love drink bottle of wine on last year vacation
+
+**Introduction to stop words**
+- Words that are filtered our during text analysis
+  - Common words such as "a", "the", "at", "of", "on", etc
+- They provide little or no value for relevance scoring
+- Fairly common to remove such words
+  -  Less common in elastic search today than in past
+    - The relevance algorithm has been improved significantly
+- Not removed by default, and i generally dont recommend doing so
+
+
+
+
+**Analyzers and search queries**
+![Stemming analyzer](stemming_analyzer.png)
+
+**Build-in analyzers**
+*Standard Analyzer*
+- Splittext at word boundaries and remove punctuation
+  - Done by the standard tokenizer
+- Lowercases letters with the lowercase token filter
+- Contains the stop token filter (disabled by default)
+
+![Standard analyzer](standard_analyzer.png)
+
+**Simple analyzer**
+
+- Similar to standard analyzer
+  - Splits into tokens when encountering anything else than letters
+- Lowercases letters with the lowercase tokenizer
+  - Unusual performance hack
+![Simple analyzer](simple_analyzer.png)
+
+**Whitespace analyzer**
+- Splits text into tokens by whitespace
+- Does not lowercase letters
+
+![Whitespace Analyzer](whitespace_analyzer.png)
+
+**Keyword analyzer**
+- No-op analyzer that leaves the input text intact
+  - It simply outputs it as single token
+- Used for keyword fields by default
+  - Used for exact matching
+
+![Keyword analyzer](keyword_analyzer.png)
+
+**Pattern Analyzer**
+- A regular expression is used to match token seperators
+  - It should match whatever should split the text into tokens
+- This analyzer is flexible
+- the default matches all non word characters (\W+)
+- Lowercase letters by default
+
+![Pattern Analyzer](pattern_analyzer.png)
+
+[Built-In Analyzers references](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-analyzers.html)
+
+![Built In Analyzer Example 1](builtin_analyzer_example_1.png)
+
+![Built In Custom Extension](built_in_extend.png)
+
+![Using custom builtin analyzer](custom_builtin_usage.png)
+
+
+**Custom Analyzer**
+# Creating custom analyzers
+
+## Remove HTML tags and convert HTML entities
+```
+POST /_analyze
+{
+  "char_filter": ["html_strip"],
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+## Add the `standard` tokenizer
+```
+POST /_analyze
+{
+  "char_filter": ["html_strip"],
+  "tokenizer": "standard",
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+## Add the `lowercase` token filter
+```
+POST /_analyze
+{
+  "char_filter": ["html_strip"],
+  "tokenizer": "standard",
+  "filter": [
+    "lowercase"
+  ],
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+## Add the `stop` token filter
+
+This removes English stop words by default.
+```
+POST /_analyze
+{
+  "char_filter": ["html_strip"],
+  "tokenizer": "standard",
+  "filter": [
+    "lowercase",
+    "stop"
+  ],
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+## Add the `asciifolding` token filter
+
+Convert characters to their ASCII equivalent.
+```
+POST /_analyze
+{
+  "char_filter": ["html_strip"],
+  "tokenizer": "standard",
+  "filter": [
+    "lowercase",
+    "stop",
+    "asciifolding"
+  ],
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+## Create a custom analyzer named `my_custom_analyzer`
+```
+PUT /analyzer_test
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer": {
+          "type": "custom",
+          "char_filter": ["html_strip"],
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "stop",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+## Configure the analyzer to remove Danish stop words
+
+To run this query, change the index name to avoid a conflict. Remember to remove the comments. :wink:
+```
+PUT /analyzer_test
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "danish_stop": {
+          "type": "stop",
+          "stopwords": "_danish_"
+        }
+      },
+      "char_filter": {
+        # Add character filters here
+      },
+      "tokenizer": {
+        # Add tokenizers here
+      },
+      "analyzer": {
+        "my_custom_analyzer": {
+          "type": "custom",
+          "char_filter": ["html_strip"],
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "danish_stop",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+## Test the custom analyzer
+```
+POST /analyzer_test/_analyze
+{
+  "analyzer": "my_custom_analyzer", 
+  "text": "I&apos;m in a <em>good</em> mood&nbsp;-&nbsp;and I <strong>love</strong> açaí!"
+}
+```
+
+**Adding analyzers to existing indices**
+If you try to add analyzer to existing index then following error will appear
+
+```
+PUT /analyzer_test/_settings
+{
+  "analysis": {
+    "analyzer": {
+      "my_second_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "char_filter": ["html_strip"],
+        "filter": [
+          "lowercase",
+          "stop",
+          "asciifolding"
+        ]
+      }
+    }
+  }
+}
+```
+
+
+```json
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "illegal_argument_exception",
+        "reason": "Can't update non dynamic settings [[index.analysis.analyzer.my_second_analyzer.tokenizer, index.analysis.analyzer.my_second_analyzer.type, index.analysis.analyzer.my_second_analyzer.char_filter, index.analysis.analyzer.my_second_analyzer.filter]] for open indices [[analyzer_test/eN5VeIooQlyawrSELU5P-A]]"
+      }
+    ],
+    "type": "illegal_argument_exception",
+    "reason": "Can't update non dynamic settings [[index.analysis.analyzer.my_second_analyzer.tokenizer, index.analysis.analyzer.my_second_analyzer.type, index.analysis.analyzer.my_second_analyzer.char_filter, index.analysis.analyzer.my_second_analyzer.filter]] for open indices [[analyzer_test/eN5VeIooQlyawrSELU5P-A]]"
+  },
+  "status": 400
+}
+```
+
+
+- An open index is available for indexing and searching requests
+- A closed index will refuse requests
+  - Read and write requests are blocked
+  - Necessary for performing operation
+
+```
+POST /analyzer_test/_close
+```
+```
+PUT /analyzer_test/_settings
+{
+  "analysis": {
+    "analyzer": {
+      "my_second_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "char_filter": ["html_strip"],
+        "filter": [
+          "lowercase",
+          "stop",
+          "asciifolding"
+        ]
+      }
+    }
+  }
+}
+```
+
+```
+POST /analyzer_test/_open
+```
+
+*Dynamic and static settings*
+- Dynamic settings can be changed withoutclosing the index first
+  - Requires no downtime
+Static settings requires the index to be closed first
+- The index will be briefly unavailable
+- `Analyzers settings are static settings`
+
+>When the index is closed it will not be avialable for any search and this results in downtime.
+
+use below query to get details
+```
+GET /analyzer_test/_settings
+```
+*Opening and closing index*
+- Fairly quick but might not be an option for production clusters
+  - Eg Mission critical systems where downtime is acceptable
+- Alternatively reindex documents into a new index
+  - Create a new index with the updated settings
+  - Use an index alias for the transition
+
