@@ -1787,7 +1787,7 @@ The above stemmed sentences will get converted to
 **Custom Analyzer**
 # Creating custom analyzers
 
-## Remove HTML tags and convert HTML entities
+#### Remove HTML tags and convert HTML entities
 ```
 POST /_analyze
 {
@@ -1796,7 +1796,7 @@ POST /_analyze
 }
 ```
 
-## Add the `standard` tokenizer
+#### Add the `standard` tokenizer
 ```
 POST /_analyze
 {
@@ -1806,7 +1806,7 @@ POST /_analyze
 }
 ```
 
-## Add the `lowercase` token filter
+#### Add the `lowercase` token filter
 ```
 POST /_analyze
 {
@@ -1819,7 +1819,7 @@ POST /_analyze
 }
 ```
 
-## Add the `stop` token filter
+#### Add the `stop` token filter
 
 This removes English stop words by default.
 ```
@@ -1835,7 +1835,7 @@ POST /_analyze
 }
 ```
 
-## Add the `asciifolding` token filter
+#### Add the `asciifolding` token filter
 
 Convert characters to their ASCII equivalent.
 ```
@@ -1852,7 +1852,7 @@ POST /_analyze
 }
 ```
 
-## Create a custom analyzer named `my_custom_analyzer`
+#### Create a custom analyzer named `my_custom_analyzer`
 ```
 PUT /analyzer_test
 {
@@ -1875,7 +1875,7 @@ PUT /analyzer_test
 }
 ```
 
-## Configure the analyzer to remove Danish stop words
+#### Configure the analyzer to remove Danish stop words
 
 To run this query, change the index name to avoid a conflict. Remember to remove the comments. :wink:
 ```
@@ -1912,7 +1912,7 @@ PUT /analyzer_test
 }
 ```
 
-## Test the custom analyzer
+#### Test the custom analyzer
 ```
 POST /analyzer_test/_analyze
 {
@@ -2014,3 +2014,932 @@ GET /analyzer_test/_settings
   - Create a new index with the updated settings
   - Use an index alias for the transition
 
+**Updating Analyzers**
+Sometimes you may have to update an existing analyzer
+
+#### Add `description` mapping using `my_custom_analyzer`
+```
+PUT /analyzer_test/_mapping
+{
+  "properties": {
+    "description": {
+      "type": "text",
+      "analyzer": "my_custom_analyzer"
+    }
+  }
+}
+```
+
+#### Index a test document
+```
+POST /analyzer_test/_doc
+{
+  "description": "Is that Peter's cute-looking dog?"
+}
+```
+
+#### Search query using `keyword` analyzer
+```
+GET /analyzer_test/_search
+{
+  "query": {
+    "match": {
+      "description": {
+        "query": "that",
+        "analyzer": "keyword"
+      }
+    }
+  }
+}
+```
+
+#### Close `analyzer_test` index
+```
+POST /analyzer_test/_close
+```
+
+#### Update `my_custom_analyzer` (remove `stop` token filter)
+```
+PUT /analyzer_test/_settings
+{
+  "analysis": {
+    "analyzer": {
+      "my_custom_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "char_filter": ["html_strip"],
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      }
+    }
+  }
+}
+```
+
+#### Open `analyzer_test` index
+```
+POST /analyzer_test/_open
+```
+
+#### Retrieve index settings
+```
+GET /analyzer_test/_settings
+```
+
+#### Reindex documents
+```
+POST /analyzer_test/_update_by_query?conflicts=proceed
+```
+## Introduction to Searching
+We can query through two ways 
+- Query DSL
+- Request URI
+
+### Searching with the request URI
+
+#### Matching all documents
+
+```
+GET /products/_search?q=*
+```
+
+#### Matching documents containing the term `Lobster`
+
+```
+GET /products/_search?q=name:Lobster
+```
+
+#### Matching documents containing the tag `Meat`
+
+```
+GET /products/_search?q=tags:Meat
+```
+
+#### Matching documents containing the tag `Meat` _and_ name `Tuna`
+
+```
+GET /products/_search?q=tags:Meat AND name:Tuna
+```
+
+### Introduction to Query DSL
+
+![Compound Query](compound_query.png)
+
+![Shard Process](shard_process.png)
+
+### Understanding relevance score
+
+![Relevance Scores](relevance_scores.png)
+
+
+Relevance scoring algorithm used are:
+- It was using TF/IDF - Term Frequency/Inverse Document Frequency
+- Currently it is using Okapi BM25
+
+Term Frequency: How many times does the term appears in the field for a given document
+
+Inverse Document Frequency: How often does the term appear within the index
+
+Field length norm: The longer the field the less likely it has relevance score. The idea is the shorter the term is much easy it is to search.
+
+`BM25` algorithm differs slightly improvised than TF/IDF because BM25 is better in managing Stop words.
+
+Nonlinear Term Frequency Saturation: Will help to normalize the curve. It means that if term occurs more frquently then it plays almost no importance. For Eg: If the word occured 40 times is given very low importance as 1000 times. This will help algorithm to filter out stop words
+
+![NonLinear Term Frequency Saturation](ntfs.png)
+
+Field length norm is also improved in BM25 algorithm
+The shorter the field the more significant the term is considered.
+
+```
+GET /products/default/_search?explain
+{
+  "query": {
+    "term": {
+      "name": "lobster"
+    }
+  }
+}
+```
+`explain` will help us understand the query result in detail. Checkout the following query
+
+```
+GET /products/_doc/1/_explain
+{
+  "query": {
+    "term": {
+      "name": "lobster"
+    }
+  }
+}
+```
+for this following resulted
+
+```json
+{
+  "_index" : "products",
+  "_type" : "_doc",
+  "_id" : "1",
+  "matched" : false,
+  "explanation" : {
+    "value" : 0.0,
+    "description" : "no matching term",
+    "details" : [ ]
+  }
+}
+
+```
+
+In this `explanation` part it shows matching term is not found. This gives clear meaning why data is not found. If it is complex query it will be very much helpful.
+
+### Query Contexts
+
+Filter context: Filter context are usually used in Dates/Status/ Ranges etc,
+
+Query Context: Affects Relevance. It checks if document matches or not and uses Filter Context if required.
+
+
+**When to use Query Context/ Filter Context**
+If you want to calculate `more relevance` then use `query context`. It uses relevance and try to find most suitable. If you want to find the `values directly` irrelevant to relevance, use `Filter context`. It will be much faster, because it avoids Relevance score calculation
+
+> Filters can be cached
+
+### Full text queries vs term level queries
+
+
+- Term Queries  will by default look for exact keyword. And in the first screenshot as expected values is small case `lobsters` and the query returns value
+![Term Level Query Correct](term_query_1.png)
+- Term Queries  will by default look for exact keyword. And in the second screenshot as expected values is small case `lobsters` and the query doesnt returns value
+![Term Level Query Wrong](term_query_2.png)
+- Match Queries  will analyze and convert to lowercase.  And in the third screenshot as expected values is neither small or capital case `lobsters` and the query will returns value because it will be automatically converted
+![Match Level Query Wrong](match_query.png)
+
+- Comparison between Term and Match queries
+![Match vs term Query](term_match_query.png)
+
+> Term level queries are useful to search Enum, dates, numbers etc
+
+### Introduction to term level queries
+Pretty much useful for status field to check whether its 1 or 0. Not be very useful for searching through descriptions
+```
+GET /products/_doc/_search
+{
+  "query": {
+    "term": {
+      "is_active": true
+    }
+  }
+}
+```
+**(or)**
+```
+GET /products/_doc/_search
+{
+  "query": {
+    "term": {
+      "is_active": {
+        "value": true
+      }
+    }
+  }
+}
+
+```
+
+The above query will fetch all status with value true
+
+**Multiple values**
+```
+GET /products/_doc/_search
+{
+  "query": {
+    "terms": {
+      "tags.keyword": [
+        "Soup",
+        "Cake"
+      ]
+    }
+  }
+}
+```
+This query will return all the matching items which satisfies multiple values.
+
+**Matching documents with range values**
+`gte` and `lte` are the important factos for range queries. It doesnt necessary that both values should be present. Either one is also fine
+
+To get all stocks greater than 1 and lesser than 5
+```
+GET /products/_doc/_search
+{
+  "query": {
+    "range": {
+      "in_stock": {
+        "gte":1,
+        "lte":5
+      }
+    }
+  }
+}
+
+```
+To get all products which has created greater than 1st jan 2010 and 31st Dec 2021
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "2010/01/01",
+        "lte": "2010/12/31"
+      }
+    }
+  }
+}
+```
+
+To specify date format `format` will help.
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "01-01-2010",
+        "lte": "31-12-2010",
+        "format": "dd-MM-yyyy"
+      }
+    }
+  }
+}
+```
+
+**Working with relative dates (date math)**
+This will be very much helpful to write equation
+For dates it is
+
+|Term  |Notation|
+|------|--------|
+|Day   |d       |
+|Month |M       |
+|Year  |y       |
+|Week  |w       |
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "2010/01/01||-1y"
+      }
+    }
+  }
+}
+```
+
+We should write it with `||` and then expression. In the above query it is mentioned as `-1y` which means it is reduce the date by 1 year which is `01-01-2009`
+
+To subtract 1 year from `2010/01/01` and rounding by month
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "2010/01/01||-1y/M"
+      }
+    }
+  }
+}
+```
+
+Rounding by month before subtracting one year from `2010/01/01`
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "2010/01/01||/M-1y"
+      }
+    }
+  }
+}
+```
+
+**Rounding by month before subtracting one year from the current date**
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "now/M-1y"
+      }
+    }
+  }
+}
+```
+
+**Matching documents with a `created` field containing the current date or later**
+
+```
+GET /products/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "now"
+      }
+    }
+  }
+}
+```
+
+### Matching document with non-null values
+Just `exists` will help
+```
+GET /products/_search
+{
+  "query": {
+    "exists": {
+      "field": "tags"
+    }
+  }
+}
+```
+> Empty string means null in Elastic search
+
+### Matching based on prefixes
+Matching documents containing a tag beginning with Vege
+
+```
+GET /products/_search
+{
+  "query": {
+    "prefix": {
+      "tags.keyword": "Vege"
+    }
+  }
+}
+```
+
+### Searching with wildcards
+Adding an asterisk for any characters (zero or more)
+
+`*` means `zero or more`
+`?` means 'single character
+ 
+The below querry returns all the products which contains item in array for tags 
+```
+GET /products/_search
+{
+  "query": {
+    "wildcard": {
+      "tags.keyword": "Veg*ble"
+    }
+  }
+}
+```
+The below querry returns all the products which contains item in array for tags 
+```
+GET /products/_search
+{
+  "query": {
+    "wildcard": {
+      "tags.keyword": "Veg?ble"
+    }
+  }
+}
+```
+The above query will not return any values.
+Whereas the q query will
+
+```
+GET /products/_search
+{
+  "query": {
+    "wildcard": {
+      "tags.keyword": "Veget?ble"
+    }
+  }
+}
+```
+Because only one character is missing and `?` is doing justification.
+
+
+**Searching with regular expressions**
+
+We can even search with regular expression as well.
+
+```
+GET /products/_search
+{
+  "query": {
+    "regexp": {
+      "tags.keyword": "Veg[a-zA-Z]+ble"
+    }
+  }
+}
+```
+
+### Introduction to Full text Queries
+
+> Elastic search don't have array data type because field may contain one or more type of data.
+
+**Flexible matching with match query**
+Match query lookout for relevance score
+For eg
+```
+GET /recipe/_doc/_search
+{
+  "query":{
+    "match": {
+      "title": "Recipes with Pasta or Spaghetti"
+    }
+  }
+}
+```
+
+In the above query the search text will be broken in to pieces and removes all joining words like `with`, `or`, `and`, `they` etc
+
+So the result will be the one which matches 
+`Recipes` or `Pasta` or `Spaghetti`
+
+If we need to include `AND` instead of `OR` then we have to use `operator` attribute
+
+```
+GET /recipe/_doc/_search
+{
+  "query":{
+    "match": {
+      "title": {
+        "query": "Recipes with Pasta or Spaghetti",
+        "operator": "AND"
+      }
+    }
+  }
+```
+
+**Matching phrases**
+Matching exact phrase is what it means
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "spaghetti puttanesca"
+    }
+  }
+}
+```
+
+It will pull the result which has `spaghetti puttanesca` in the title. 
+
+> Note: If the order is changed it will not the yield the expected result. Because in match phrase order matters
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "puttanesca spaghetti"
+    }
+  }
+}
+```
+This will not yield the same result as previous query.
+
+**Searching multiple field**
+To search across multiple fields then `multi_match` should be used
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "pasta",
+      "fields": [ "title", "description" ]
+    }
+  }
+}
+```
+Relevance score is used to match.:smile:
+
+
+### Introduction to compound queries
+Leaf queries are very simple query where it will search only one query at a time. Which is mostly used in term queries or match queries. Compound queries are used to write advanced queries which contain multiple leaf queries.
+
+
+**Querying with boolean logic**
+Bool queries are like Where clause in SQL but with extra feature of using `Relevance scores`
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "ingredients.name": "parmesan"
+          }
+        },
+        {
+          "range": {
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+In the above query we have bool query context and inside that we are going to provide `must` array. `Match` will get relevance scores and `range` will not.
+
+```
+GET /recipe/_search
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "ingredients.name": "parmesan"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Its the same previous query but range is added to filter context rather than query context because of two reasons
+- If we place range query in Query context it will return constant score of 1 for the matching range. Whereas if it is in Filter context it will not add any score.
+- The query inside filter context can be cached, whereas query inside query context will not be cached.
+
+> Adding filters in filter context will have added edge in performance
+
+to compare the result between range in query context and filter context see the sample scores from both
+
+*Query context*
+```json
+  "_index" : "recipe",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_score" : 2.3795729,
+  "_ignored" : [
+    "description.keyword",
+    "steps.keyword"
+  ],
+```
+
+*Filter context*
+
+```json
+  "_index" : "recipe",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_score" : 1.3795729,
+  "_ignored" : [
+    "description.keyword",
+    "steps.keyword"
+  ],
+```
+If you observe `_score` key the value is reduced in filter context because there is no score added for range in filter context.
+
+`must_not`
+``` json
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "ingredients.name": "parmesan"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "ingredients.name": "tuna"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+`must_not` is to tell that dont include results which is matching `tuna`. the highlight is must_not will not include any score though its in query because it is running in filter context through it is query context. So even must_not will be cached.
+
+`should`
+Should key is like better to have concept. It will boost the relevance score
+
+```json
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "ingredients.name": "parmesan"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "ingredients.name": "tuna"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "ingredients.name": "parsley"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+But mainly to boost relevance score only.
+
+>`should` behavior depends on where it is.
+
+For example in the previous query should is like good to have. It was optional in the above query, there is no `must` so `should` will act like `must` - a `mandatory` key
+
+```json
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "ingredients.name": "parmesan"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+**Debugging boolean query**
+>How to debug queries? 
+By using Explain query. 
+
+But here we are going to do with Named Query
+```
+GET /recipe/_search
+{
+    "query": {
+        "bool": {
+          "must": [
+            {
+              "match": {
+                "ingredients.name": {
+                  "query": "parmesan",
+                  "_name": "parmesan_must"
+                }
+              }
+            }
+          ],
+          "must_not": [
+            {
+              "match": {
+                "ingredients.name": {
+                  "query": "tuna",
+                  "_name": "tuna_must_not"
+                }
+              }
+            }
+          ],
+          "should": [
+            {
+              "match": {
+                "ingredients.name": {
+                  "query": "parsley",
+                  "_name": "parsley_should"
+                }
+              }
+            }
+          ],
+          "filter": [
+            {
+              "range": {
+                "preparation_time_minutes": {
+                  "lte": 15,
+                  "_name": "prep_time_filter"
+                }
+              }
+            }
+          ]
+        }
+    }
+}
+```
+![Debugging boolean query](boolean_debugging_matching_query.png)
+
+This will help us identifies how the matching happened. It is easy to debug why this data has been returned.
+
+**How match query works?**
+Match query converts internally to term-bool query after analyzing tohe query with any of the query analyzer specified in match query. 
+By default all match query will be `Should` query 
+Below two queries will yield same result
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "match": {
+      "title": "pasta carbonara"
+    }
+  }
+}
+```
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "term": {
+            "title": "pasta"
+          }
+        },
+        {
+          "term": {
+            "title": "carbonara"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+And if we use `AND` operator in match query `should` will be replaced to `must`.
+Below two queries will yield same result. Note we have used `AND` operator in Match query.
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "pasta carbonara",
+        "operator": "and"
+      }
+    }
+  }
+}
+```
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "title": "pasta"
+          }
+        },
+        {
+          "term": {
+            "title": "carbonara"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+Now the important thing to note here is Match query does tokenization and analyzer will help to analyze query. Where as term query will not do that. So how both are yielding same result? Because both are using small case. Even Match query after analysis it will be converted to smaller case.
+
+Below two query will not yield same result.
+```
+GET /recipe/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "Pasta carbonara",
+        "operator": "and"
+      }
+    }
+  }
+}
+```
+
+```
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "title": "Pasta"
+          }
+        },
+        {
+          "term": {
+            "title": "carbonara"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+The reason is because the match query after analysis it will search for `pasta` and `carbonara`. But term query as there is no analysis it will be searched as `Pasta`(Upper case `P`) and `carbonara`, which will yield different result.
