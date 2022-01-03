@@ -2943,3 +2943,350 @@ GET /recipe/_search
 ```
 
 The reason is because the match query after analysis it will search for `pasta` and `carbonara`. But term query as there is no analysis it will be searched as `Pasta`(Upper case `P`) and `carbonara`, which will yield different result.
+
+
+## Joining Query
+Usually elastic search stores data in denormalized form which leads to better performance.
+>Elastic search is not a primary data source
+
+> Elastic search supports only simple joins. Joining is very expensive in elastic search
+
+
+**Querying nested objects**
+Its not so straight forward to query array of objects. We cannot query in a direct way.
+For eg:
+```
+PUT /department
+{
+  "mappings": {  
+    "properties": {
+      "name": {
+        "type": "text"
+      },
+      "employees": {
+        "type": "nested"
+      }
+    }
+  }
+}
+```
+
+```
+PUT /department/_doc/1
+{
+  "name": "Development",
+  "employees": [
+    {
+      "name": "Eric Green",
+      "age": 39,
+      "gender": "M",
+      "position": "Big Data Specialist"
+    },
+    {
+      "name": "James Taylor",
+      "age": 27,
+      "gender": "M",
+      "position": "Software Developer"
+    },
+    {
+      "name": "Gary Jenkins",
+      "age": 21,
+      "gender": "M",
+      "position": "Intern"
+    },
+    {
+      "name": "Julie Powell",
+      "age": 26,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Benjamin Smith",
+      "age": 46,
+      "gender": "M",
+      "position": "Senior Software Engineer"
+    }
+  ]
+}
+```
+```
+PUT /department/_doc/2
+{
+  "name": "HR & Marketing",
+  "employees": [
+    {
+      "name": "Patricia Lewis",
+      "age": 42,
+      "gender": "F",
+      "position": "Senior Marketing Manager"
+    },
+    {
+      "name": "Maria Anderson",
+      "age": 56,
+      "gender": "F",
+      "position": "Head of HR"
+    },
+    {
+      "name": "Margaret Harris",
+      "age": 19,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Ryan Nelson",
+      "age": 31,
+      "gender": "M",
+      "position": "Marketing Manager"
+    },
+    {
+      "name": "Kathy Williams",
+      "age": 49,
+      "gender": "F",
+      "position": "Senior Marketing Manager"
+    },
+    {
+      "name": "Jacqueline Hill",
+      "age": 28,
+      "gender": "F",
+      "position": "Junior Marketing Manager"
+    },
+    {
+      "name": "Donald Morris",
+      "age": 39,
+      "gender": "M",
+      "position": "SEO Specialist"
+    },
+    {
+      "name": "Evelyn Henderson",
+      "age": 24,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Earl Moore",
+      "age": 21,
+      "gender": "M",
+      "position": "Junior SEO Specialist"
+    },
+    {
+      "name": "Phillip Sanchez",
+      "age": 35,
+      "gender": "M",
+      "position": "SEM Specialist"
+    }
+  ]
+}
+```
+
+```
+GET /department/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "employees.position": "intern"
+          }
+        },
+        {
+          "term": {
+            "employees.gender.keyword": {
+              "value": "F"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+The above get statement will not return anything. Because we cannot query array.
+```
+GET /department/_search
+{
+  "query": {
+    "nested": {
+      "path": "employees",
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "match": {
+                "employees.position": "intern"
+              }
+            },
+            {
+              "term": {
+                "employees.gender.keyword": {
+                  "value": "F"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+The below query will return entire document despite of match because documents are stored in little different format.
+
+![Nested stored content](nested_stored_document.png)
+
+So when it tries to match, it matches everything.
+
+**Nested inner hits**
+If you want to get data then we need to use inner hits
+
+```
+GET /department/_search
+{
+  "_source": false,
+  "query": {
+    "nested": {
+      "path": "employees",
+      "inner_hits": {},
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "match": {
+                "employees.position": "intern"
+              }
+            },
+            {
+              "term": {
+                "employees.gender.keyword": {
+                  "value": "F"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+If you see there is a new option called `"inner_hits":{}`. This one will help to get matching data.
+
+![Nested Hits Result](nested_hits_result.png). 
+This will return corresponding matching data.
+
+**Mapping document relationship**
+We need to establish the relationship between two entities. Parent child relationship it is
+
+```
+PUT /department/_mapping
+{
+  "properties": {
+    "join_field": { 
+      "type": "join",
+      "relations": {
+        "department": "employee"
+      }
+    }
+  }
+}
+```
+
+Here `department` is a parent and `employee` is a child.
+
+**Adding documents**
+Adding document is usual but one thing is different, which is `join_field`.
+
+```
+PUT /department/_doc/1
+{
+  "name": "Development",
+  "join_field": "department"
+}
+```
+
+This `department` will help to tag that current name will get tagged in to `department` which is *parent*.
+
+```
+PUT /department/_doc/2
+{
+  "name": "Marketing",
+  "join_field": "department"
+}
+```
+`Adding employees for departments`
+```
+PUT /department/_doc/3?routing=1
+{
+  "name": "Bo Andersen",
+  "age": 28,
+  "gender": "M",
+  "join_field": {
+    "name": "employee",
+    "parent": 1
+  }
+}
+```
+Here if you have to tag it to child, then instead of directly specifying value in `join_field` object have to be specified and inside that `name` field should be mentioned. on top of that `parent` field also need to specify which department this should be associated.
+Likewise more employees are getting added to department
+
+```
+PUT /department/_doc/4?routing=2
+{
+  "name": "John Doe",
+  "age": 44,
+  "gender": "M",
+  "join_field": {
+    "name": "employee",
+    "parent": 2
+  }
+}
+
+PUT /department/_doc/5?routing=1
+{
+  "name": "James Evans",
+  "age": 32,
+  "gender": "M",
+  "join_field": {
+    "name": "employee",
+    "parent": 1
+  }
+}
+
+PUT /department/_doc/6?routing=1
+{
+  "name": "Daniel Harris",
+  "age": 52,
+  "gender": "M",
+  "join_field": {
+    "name": "employee",
+    "parent": 1
+  }
+}
+
+PUT /department/_doc/7?routing=2
+{
+  "name": "Jane Park",
+  "age": 23,
+  "gender": "F",
+  "join_field": {
+    "name": "employee",
+    "parent": 2
+  }
+}
+
+PUT /department/_doc/8?routing=1
+{
+  "name": "Christina Parker",
+  "age": 29,
+  "gender": "F",
+  "join_field": {
+    "name": "employee",
+    "parent": 1
+  }
+}
+```
+Did you notice that `routing` also included. Because the question which Elastic search rises as an error is where to index this. As this is join we also have to specify where do we need to exactly index this. For that this `routing` is going to be helpful. Without that it is going to throw error. 
+
+
