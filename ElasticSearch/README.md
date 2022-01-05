@@ -3289,4 +3289,318 @@ PUT /department/_doc/8?routing=1
 ```
 Did you notice that `routing` also included. Because the question which Elastic search rises as an error is where to index this. As this is join we also have to specify where do we need to exactly index this. For that this `routing` is going to be helpful. Without that it is going to throw error. 
 
+**Querying by parent Id**
+Returns child documents based on parent document id
+```json
+GET /department/_search
+{
+  "query": {
+    "parent_id": {
+      "type": "employee",// specify which relation that we need
+      "id": 1
+    }
+  }
+}
+```
+
+>This id will be used as a routing id
+
+**Querying child documents by parent**
+Returns all child details based on value that parent contains.
+```json
+GET /department/_search
+{
+  "query": {
+    "has_parent": {
+      "parent_type": "department",
+      "query": {
+        "term": {
+          "name.keyword": "Development"
+        }
+      }
+    }
+  }
+}
+```
+
+Incorporating the parent relevance score to child
+
+```json
+GET /department/_search
+{
+  "query": {
+    "has_parent": {
+      "parent_type": "department",
+      "score": true,
+      "query": {
+        "term": {
+          "name.keyword": "Development"
+        }
+      }
+    }
+  }
+}
+```
+
+By default for all the result the score will be given as 1. But if we add `score:true` then it will get all the relevance score from parent.
+
+`function_score` will help to give more control on result.
+
+**Querying parent by child document**
+To query the parent based on child.
+
+```json
+GET /department/_search
+{
+  "query": {
+    "has_child": {
+      "type": "employee",
+      "score_mode":"sum", // What this does is instead of just 1, the sum of child documents score. It helps to figure out how well it has matched
+      "min_children": 2,
+      "max_children":5,
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "age": {
+                  "gte": 50
+                }
+              }
+            }
+          ],
+          "should": [
+            {
+              "term": {
+                "gender.keyword": "M"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+![score mode](score_mode.png)
+
+**Multi level Relations**
+Forming Multiple level of relation.
+Company - Top most Parent
+Department - Parent: Company
+Supplier - Parent: Company
+Employee - Parent: Department.
+
+All the below query is to insert sample index
+```json
+PUT /company
+{
+  "mappings": {
+    "properties": {
+      "join_field": { 
+        "type": "join",
+        "relations": {
+          "company": ["department", "supplier"],
+          "department": "employee"
+        }
+      }
+    }
+  }
+}
+
+PUT /company/_doc/1
+{
+  "name": "My Company Inc.",
+  "join_field": "company"
+}
+
+PUT /company/_doc/2?routing=1
+{
+  "name": "Development",
+  "join_field": {
+    "name": "department",
+    "parent": 1
+  }
+}
+
+PUT /company/_doc/3?routing=1
+{
+  "name": "Bo Andersen",
+  "join_field": {
+    "name": "employee",
+    "parent": 2
+  }
+}
+
+PUT /company/_doc/4
+{
+  "name": "Another Company, Inc.",
+  "join_field": "company"
+}
+PUT /company/_doc/5?routing=4
+{
+  "name": "Marketing",
+  "join_field": {
+    "name": "department",
+    "parent": 4
+  }
+}
+PUT /company/_doc/6?routing=4
+{
+  "name": "John Doe",
+  "join_field": {
+    "name": "employee",
+    "parent": 5
+  }
+}
+```
+Now we are going to query it.
+
+```json
+GET /company/_search
+{
+  "query": {
+    "has_child": {
+      "type": "department",
+      "query": {
+        "has_child": {
+          "type": "employee",
+          "query": {
+            "term": {
+              "name.keyword": "John Doe"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+![Multi Level Relation Shards](multi_relation_shards.png)
+
+**Parent child inner hits**
+This query returns departments which has employees matching to the query
+```json
+GET /department/_search
+{
+  "query": {
+    "has_child": {
+      "type": "employee",
+      "inner_hits": {},
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "age": {
+                  "gte": 50
+                }
+              }
+            }
+          ],
+          "should": [
+            {
+              "term": {
+                "gender.keyword": "M"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+The below query returns all the child which is matching department to the query
+```json
+GET /department/_search
+{
+  "query": {
+    "has_parent": {
+      "inner_hits": {},
+      "parent_type": "department",
+      "query": {
+        "term": {
+          "name.keyword": "Development"
+        }
+      }
+    }
+  }
+}
+```
+
+**Terms lookup mechanism**
+To query result based on many terms. to do that we have to use something called `Terms Lookup mechanism`
+
+Following are the test data
+```json
+PUT /users/_doc/1
+{
+  "name": "John Roberts",
+  "following" : [2, 3]
+}
+PUT /users/_doc/2
+{
+  "name": "Elizabeth Ross",
+  "following" : []
+}
+PUT /users/_doc/3
+{
+  "name": "Jeremy Brooks",
+  "following" : [1, 2]
+}
+PUT /users/_doc/4
+{
+  "name": "Diana Moore",
+  "following" : [3, 1]
+}
+PUT /stories/_doc/1
+{
+  "user": 3,
+  "content": "Wow look, a penguin!"
+}
+PUT /stories/_doc/2
+{
+  "user": 1,
+  "content": "Just another day at the office... #coffee"
+}
+PUT /stories/_doc/3
+{
+  "user": 1,
+  "content": "Making search great again! #elasticsearch #elk"
+}
+PUT /stories/_doc/4
+{
+  "user": 4,
+  "content": "Had a blast today! #rollercoaster #amusementpark"
+}
+PUT /stories/_doc/5
+{
+  "user": 4,
+  "content": "Yay, I just got hired as an Elasticsearch consultant - so excited!"
+}
+PUT /stories/_doc/6
+{
+  "user": 2,
+  "content": "Chilling at the beach @ Greece #vacation #goodtimes"
+}
+```
+Query to select the data
+```json
+GET /stories/_search
+{
+  "query": {
+    "terms": {
+      "user": {
+        "index": "users",
+        "id": "1",
+        "path": "following"
+      }
+    }
+  }
+}
+```
+![Term Lookup Mechanism](term_lookup_mechanism.png)
+
+![Term Lookup Internals](term_lookup_internals.png)
 
