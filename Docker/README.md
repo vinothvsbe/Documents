@@ -101,3 +101,64 @@ docker run -p 3000:80 nodeapp1 # -p stands for port
 ```
 Output will be produced.
 
+#### Images are Readonly
+- Images are readonly. whenever there is any change in the code it will not automatically updated to image. We have to rebuild to make sure that we accomodate that change in image.
+
+>We have to rebuild image to accomodate changes. Changes we made only those will be accomodated to existing file. Everything will be cached
+
+- Images are layered. Everytime things changes, it keep adding more and more layesr on top of the exisitng image.
+- Once there is any one step it got changed then all subsequeent will be rebuilt, and it will not be taken from Cache.
+
+In the above docker script we can rearrange little bit to make sure that it is performance efficient.
+
+```docker
+FROM node
+# Setting Working directory
+WORKDIR /app
+# When we copy only package.json then npm install will run only this based on package.json.
+# By doing so If there is any code change then it will not run npm install even for code change
+# other than package.json. 
+COPY package.json /app
+# If we dont set working directory by default it will execute this command in root folder
+RUN npm install
+# By default we have to specify . for copying everything to Root folder.
+# Whereas if you want it inside particular folder then specify in second '.'
+COPY . /app
+# Port expose has to be done, because Docker is running in isolation environment.
+EXPOSE 80
+# Remember we cannot use node server.js because this image file will help to build 
+# So we dont have to run node server.js but rather pass it in CMD 
+CMD ["node", "server.js"]
+```
+You can see that we have added one more copy which copies package.json file from source to destination. After that we are calling npm install. This makes sure that only when there is a package change it will call npm install (It will be pulled from `Cache`) otherwise code can be accomodated very well without running `npm install`
+
+#### Stopping and restarting containers
+- `docker --help` will bring whole lot of list which we can use to control docker.
+- `docker ps -a` will bring all the containers even history of containers we have stopped as well.
+- `docker start <container-name>` will start the container back again, so we dont have to creat the containers again and again. 
+And always it runs in **detached** mode. It runs in *background* mode.  `docker run <image name>` will instantiate new containers. And by default it runs in **attached** mode. And it runs in *foreground* mode
+```bash
+docker start <container-name> # Will start the container. To see list of all stopped conainers then docker ps -a
+docker start -a <container-name> # Will start the container with attached mode.
+```
+>This is not similar to docker run, because docker run will hold the command prompt from entering any new command. Whereas docker start will just instantiate the container.
+- `docker stop <container-name>` will stop the container
+- Attched mode will freeze that complete command prompt and hold it right there. Whereas detached mode will run in background and make sure that command prompt is used for further use. Especially if we are using `Console.log` for anything
+- If we want to use `docker run` in **detached mode**, then this command will help
+
+```bash
+docker run -p 3000:80 -d nodeapp1 # -d stands for detached mode
+```
+- If we want to convert it back to attached mode then
+
+```bash
+docker attach <container-name> # docker --help will give many useful commands
+```
+- If we want to see the history of logs which that container generated
+```bash
+docker logs <container-name> #docker ps will give you the name of running containers
+```
+- If we have to keep following up with that logs for future logs
+```bash
+docker logs -f <container-name> # -f stands for future logs. All other options we can get it by docker logs --help
+```
