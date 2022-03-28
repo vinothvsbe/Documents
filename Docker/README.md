@@ -100,3 +100,4 @@ docker run -p 3000:80 nodeapp1 # -p stands for port
 # 80 stands for the exposed port in Docker File 'EXPOSE 80'
 ```
 Output will be produced.
+
