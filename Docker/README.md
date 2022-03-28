@@ -162,3 +162,57 @@ docker logs <container-name> #docker ps will give you the name of running contai
 ```bash
 docker logs -f <container-name> # -f stands for future logs. All other options we can get it by docker logs --help
 ```
+#### Working with interactive terminal
+All the above mentioned command works well when we has web server. But how are we going to deal with this.
+Assume below mentioned pythong docker file
+*Dockerfile*
+```bash
+FROM python
+
+WORKDIR /app
+
+COPY . /app
+
+CMD ["python","rng.py"]
+```
+*rng.py*
+```python
+from random import randint
+
+min_number = int(input('Please enter the min number: '))
+max_number = int(input('Please enter the max number: '))
+
+if (max_number < min_number): 
+  print('Invalid input - shutting down...')
+else:
+  rnd_number = randint(min_number, max_number)
+  print(rnd_number)
+
+```
+The above mentioned Docker file seemed to be very usual and puthon file mentioned above excepts two parameters and it gives random number as an output
+
+To get interactive terminal if we just give `docker run` it will throw below error
+```bash
+$ docker run pythonapp1
+Please enter the min number: Traceback (most recent call last):
+  File "/app/rng.py", line 3, in <module>
+    min_number = int(input('Please enter the min number: '))
+EOFError: EOF when reading a line
+```
+So to make it work properly `docker run --help`  has huge help list.
+Couple of them are
+`-i` - Initiates interactive mode
+`-t` - Allocate a pseudo-TTY
+
+Now combined together
+`docker run -i -t pythonapp1` - Will initiates interactive mode
+![Interactive Mode](interactive_mode.png)
+
+If we stop the container and restart it, and it we have to use that
+just docker start will not help
+```bash
+docker start -a -i blissful_aryabhata 
+# -a Will help to attach the container. Remember by default container will be started with detached mode
+# -i Will help to start the container with interactive mode. 
+# Just in case help needed docker start --help
+```
