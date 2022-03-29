@@ -247,3 +247,23 @@ docker image prune # All unused images will be removed
 ```bash
 docker rmi effe3b644f42 bvch9b644f42
 ```
+
+#### Removing stopped containers automatically
+To remove containers automatically once container is exited.
+
+```bash
+docker run -p 3000:80 -d --rm -t nodeapp1
+# --rm is nothing but to remove container once it is stopped.
+# -d detached mode
+# -t tag
+# -p port
+```
+> docker run --help
+
+#### Inspecting images
+In case if you would like to know images in detail, then this command will be helpful
+
+```bash
+docker inspect <image-name>
+```
+
