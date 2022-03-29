@@ -212,7 +212,38 @@ If we stop the container and restart it, and it we have to use that
 just docker start will not help
 ```bash
 docker start -a -i blissful_aryabhata 
+# blissful_aryabhata - Container name
 # -a Will help to attach the container. Remember by default container will be started with detached mode
 # -i Will help to start the container with interactive mode. 
 # Just in case help needed docker start --help
+```
+
+#### Delete images and containers
+- To remove containers we can use `docker rm <container-name>`
+>We cannot remove running container. If we try to remove running container it will show up error
+
+```bash
+docker rm frosty_austin stoic_noether
+# we can provide multiple containers by seperating with space
+```
+- We can even remove all the stopped containers at once
+```bash
+docker container prune
+```
+- To remove images
+
+```bash
+docker rmi effe3b644f42 
+# effe3b644f42 is an image id
+```
+> We cannot remove image if there is any containers associated to that image. It doesn't matter if it is stopped or in running state. Still the container has to be deleted before removing image.
+
+- To remove all images at once
+```bash
+docker image prune # All unused images will be removed
+```
+- To remove multiple images
+
+```bash
+docker rmi effe3b644f42 bvch9b644f42
 ```
