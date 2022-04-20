@@ -1,13 +1,13 @@
 # Docker and Containier
 Containers contains both run time and the code which is required to run application
-####Virtual Machines
+#### Virtual Machines
 ![virtual Machines](virtual_machines.png)
 ![virtual Machines Pros Cons](vm_proscons.png)
-####Docker
+#### Docker
 ![Docker](docker.png)
 ![Docker VS Virtual Machines](docker_vs_vm.png)
 
-####Creating our own Docker Image
+#### Creating our own Docker Image
 - Create a new docker file named *Dockerfile* (File name should be in exact case. It is case sensitive)
 - Make sure Extension is installed in Visual Studio Code for Docker
 - Now start writing extension
@@ -267,3 +267,8 @@ In case if you would like to know images in detail, then this command will be he
 docker inspect <image-name>
 ```
 
+#### Copying Files In & Out from a Container
+If we want to look in to container and add or extract items from the container
+```bash
+
+```
