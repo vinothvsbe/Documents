@@ -1,13 +1,13 @@
 # Docker and Containier
 Containers contains both run time and the code which is required to run application
-#### Virtual Machines
+### Virtual Machines
 ![virtual Machines](virtual_machines.png)
 ![virtual Machines Pros Cons](vm_proscons.png)
-#### Docker
+### Docker
 ![Docker](docker.png)
 ![Docker VS Virtual Machines](docker_vs_vm.png)
 
-#### Creating our own Docker Image
+### Creating our own Docker Image
 - Create a new docker file named *Dockerfile* (File name should be in exact case. It is case sensitive)
 - Make sure Extension is installed in Visual Studio Code for Docker
 - Now start writing extension
@@ -101,7 +101,7 @@ docker run -p 3000:80 nodeapp1 # -p stands for port
 ```
 Output will be produced.
 
-#### Images are Readonly
+### Images are Readonly
 - Images are readonly. whenever there is any change in the code it will not automatically updated to image. We have to rebuild to make sure that we accomodate that change in image.
 
 >We have to rebuild image to accomodate changes. Changes we made only those will be accomodated to existing file. Everything will be cached
@@ -132,7 +132,7 @@ CMD ["node", "server.js"]
 ```
 You can see that we have added one more copy which copies package.json file from source to destination. After that we are calling npm install. This makes sure that only when there is a package change it will call npm install (It will be pulled from `Cache`) otherwise code can be accomodated very well without running `npm install`
 
-#### Stopping and restarting containers
+### Stopping and restarting containers
 - `docker --help` will bring whole lot of list which we can use to control docker.
 - `docker ps -a` will bring all the containers even history of containers we have stopped as well.
 - `docker start <container-name>` will start the container back again, so we dont have to creat the containers again and again. 
@@ -162,7 +162,7 @@ docker logs <container-name> #docker ps will give you the name of running contai
 ```bash
 docker logs -f <container-name> # -f stands for future logs. All other options we can get it by docker logs --help
 ```
-#### Working with interactive terminal
+### Working with interactive terminal
 All the above mentioned command works well when we has web server. But how are we going to deal with this.
 Assume below mentioned pythong docker file
 *Dockerfile*
@@ -218,7 +218,7 @@ docker start -a -i blissful_aryabhata
 # Just in case help needed docker start --help
 ```
 
-#### Delete images and containers
+### Delete images and containers
 - To remove containers we can use `docker rm <container-name>`
 >We cannot remove running container. If we try to remove running container it will show up error
 
@@ -248,7 +248,7 @@ docker image prune # All unused images will be removed
 docker rmi effe3b644f42 bvch9b644f42
 ```
 
-#### Removing stopped containers automatically
+### Removing stopped containers automatically
 To remove containers automatically once container is exited.
 
 ```bash
@@ -260,14 +260,14 @@ docker run -p 3000:80 -d --rm -t nodeapp1
 ```
 > docker run --help
 
-#### Inspecting images
+### Inspecting images
 In case if you would like to know images in detail, then this command will be helpful
 
 ```bash
 docker inspect <image-name>
 ```
 
-#### Copying Files In & Out from a Container
+### Copying Files In & Out from a Container
 If we want to look in to container and add or extract items from the container
 ```bash
 
