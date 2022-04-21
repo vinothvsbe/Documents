@@ -13,7 +13,7 @@ Containers contains both run time and the code which is required to run applicat
 - Now start writing extension
 ```docker
 FROM node
-# Setting Working directory
+# Setting Working directory, if we use "node:14" then it will pull 14 version of node
 WORKDIR /app
 # By default we have to specify . for copying everything to Root folder.
 # Whereas if you want it inside particular folder then specify in second '.'
@@ -127,7 +127,7 @@ COPY . /app
 # Port expose has to be done, because Docker is running in isolation environment.
 EXPOSE 80
 # Remember we cannot use node server.js because this image file will help to build 
-# So we dont have to run node server.js but rather pass it in CMD 
+# So we dont have to run node server.js but rather pass it in CMD. Later it will be executed in context when we run image not by default.
 CMD ["node", "server.js"]
 ```
 You can see that we have added one more copy which copies package.json file from source to destination. After that we are calling npm install. This makes sure that only when there is a package change it will call npm install (It will be pulled from `Cache`) otherwise code can be accomodated very well without running `npm install`
@@ -269,6 +269,37 @@ docker inspect <image-name>
 
 ### Copying Files In & Out from a Container
 If we want to look in to container and add or extract items from the container
-```bash
 
+Assuming following scenario. Create a folder called `Test` and `test.txt` inside that. Now if we want to copy this inside container then following command will be used.
+```bash
+docker cp test/. <container-name>:/newtestfolder # test/. is nothing but copy all the files inside test folder.
+# <container-name> =  Name of the container 
+# : = Colon is the seperator
+# /newtestfolder = Is where we should copy these files
+
+docker cp test/. boring_king:/newtestfolder
 ```
+To copy the files back from image the same command needs to be rearranged little bit
+
+```bash
+docker cp <container-name>:/newtestfolder/. test
+# This code will copy all files from new test folder to test folder in our local.
+# if we want to specify certain files still that is possible by providing file name instead of .
+```
+> This will be useful if we want to copy configuration files. Or to copy log files from container to local.
+
+### Naming and Tagging Containers and Images
+To name the container we can use `--name`
+```bash
+docker run -p 3000:80 -d --name goalapp nodeapp1
+# --name goalapp is the way to set container name to goalapp
+```
+To name the image we can use `-t`
+```bash
+docker build -t nodeapp1 . # This will create a image with name nodeapp1
+docker build -t nodeapp1:latest . # nodeapp1:latest represents the version tag.
+# We can provide whatever version value we want.
+# To run this we can use
+docker run -d --rm -p 8000:80 nodeapp1:latest
+```
+
