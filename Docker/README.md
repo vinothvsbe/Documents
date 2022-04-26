@@ -302,4 +302,20 @@ docker build -t nodeapp1:latest . # nodeapp1:latest represents the version tag.
 # To run this we can use
 docker run -d --rm -p 8000:80 nodeapp1:latest
 ```
-
+### Sharing Images - Overview
+```mermaid
+graph TD;
+    A[Everyone who has an image, <br> can create containers based on that image]
+    B[Share a docker File]
+    C[Share a Built Image]
+    A-->B
+    A-->C
+    B1[Simply run docker build .]
+    B2[Important: The docker instructions might need <br> surrounding files-folders e.g Source code]
+    B-->B1
+    B1-->B2
+    C1[Doanload an image,<br> run a container based on it]
+    C2[No build step required,<br> everything is included in image already.]
+    C-->C1
+    C1-->C2
+```
