@@ -319,3 +319,169 @@ graph TD;
     C-->C1
     C1-->C2
 ```
+
+### Pushing images to Docker Hub
+Docker images can be pushed to two different locations
+```mermaid
+graph TD;
+    A[Sharing to Repository]
+    B[Docker Hub]
+    C[Private Registry]
+    A-->B
+    A-->C
+    
+    B1[Official Docker Image Registry]
+    B2[Public private and official Images]
+    B-->B1
+    B1-->B2
+    C1[Any provider/ registry you want to use]
+    C2[Only your own or team Images]
+    C-->C1
+    C1-->C2
+    D[Share: docker push IMAGE_NAME]
+    E[Use: docker pull IMAGE_NAME]
+    B2-->D
+    C2-->D
+    D-->E
+    D-..->|Need to be <br><b>HOST:NAME</b> to talk <br>to private repository|A
+```
+Following are the steps which are need to be done
+- Create an account in Docker Hub
+- Create a public repository. For Free tier max 1 private repositpry can be created
+- To push repository in to the docker hub we have to use `docker push IMAGE_NAME`
+- Point to Note: Docker image name should be same as the one in docker hub repository
+
+If docker image name is not same then we can get that image name in two ways
+- Build the whole image with that new name
+```bash
+docker build -t vinothvsbe/ass-node-app .
+```
+- Change name of the existing name to new name
+```bash
+docker tag ass-node-app:latest vinothvsbe/ass-node-app
+# :latest tag name is optional
+# Even this above command will create a clone of the image doesnt rename existing one directly.
+``` 
+
+You cannot push images directly to docker hub directly due to security reason. So to enable pushing we have to login first.
+
+```bash
+docker login
+# once the above command request for user name and password
+docker logout
+# for force loging out
+
+docker login -u "username" -p "password" docker.io
+# This above command can also help
+```
+
+> By default all the commands towards repository will be redirected to docker hub only. If we need to connect to Private repository then full url has to be given.
+
+
+### Pulling and using Shared images
+To pull the shared image following command will be used
+```bash
+docker pull vinothvsbe/ass-node-app # It will pull latest image in repository
+docker run vinothvsbe/ass-node-app 
+```
+
+![Docker Image and Container Summary](module2_summary.png)
+
+### Key Docker Commands - Cheat sheet
+For a full list of all commands, add --help after a command - e.g. docker --help , docker run
+--help etc.
+Also view the official docs for a full, detailed documentation of ALL commands and features: https:
+//docs.docker.com/engine/reference/run/
+**Important:** This can be overwhelming! You'll only need a fraction of those features and
+commands in reality!
+- docker build . : Build a Dockerfile and create your own Image based on the file
+  - -t NAME:TAG : Assign a NAME and a TAG to an image
+- docker run IMAGE_NAME : Create and start a new container based on image IMAGENAME (or
+use the image id)
+  - --name NAME : Assign a NAME to the container. The name can be used for stopping and
+removing etc.
+  - -d : Run the container in **detached** mode - i.e. output printed by the container is not
+visible, the command prompt / terminal does NOT wait for the container to stop
+  - -it : Run the container in "**interactive**" mode - the container / application is then
+prepared to receive input via the command prompt / terminal. You can stop the
+container with CTRL + C when using the -it flag
+  - --rm : Automatically **remove** the container when it's stopped
+- docker ps : **List all** running containers
+  - -a : **List all** containers - including **stopped** ones
+- docker images : List all **locally** stored images
+- docker rm CONTAINER : **Remove** a container with name **CONTAINER** (you can also use the
+container id)
+- docker rmi IMAGE : **Remove** an **image** by name / id
+- docker container prune : Remove all **stopped** containers
+- docker image prune : Remove all **dangling** images (untagged images)
+  - -a : Remove **all** locally stored images
+- docker push IMAGE : **Push** an image to **DockerHub** (or another registry) - the image name/
+tag must include the repository name/ url
+- docker pull IMAGE : **Pull** (download) an image from **DockerHub** (or another registry) - this
+is done automatically if you just docker run IMAGE and the image wasn't pulled before
+
+
+### Managing Data and Working with Volumes
+When we try to store any data in containers that will be available till the container is removed.
+> This means that even if the container is stopped data stored in container layter willstill be active and not removed
+
+- `Images are always readonly. Data can never be modified inside image.Whatever stored is stored only in container layer`
+
+- The best solution is `volumes` for this.
+
+- Volmes store information in to local drives and then that will be made available in to containers
+
+- Volume persisit data even when containers are removed, because data will be stored inside the local machine and not on the containers
+
+**Types of volume**
+```mermaid
+graph TD;
+    A[Volume]
+    B[Anonymous Volume]
+    C[Named Volume]
+    A-->B
+    A-->C
+```
+**Anonymous Volume** - There wont be any name for the volume
+```docker
+FROM node
+
+WORKDIR /app
+
+COPY package.json /app
+
+RUN npm install
+
+COPY . /app
+
+EXPOSE 80
+
+VOLUME [ "/app/feedback" ]
+
+CMD ["node","server.js"]
+```
+```bash
+docker run --name feedback-app -d --rm -p 3000:80  feedback-node:volume
+```
+When we run this there wont be any problem,but once container is stopped then files will not be accessible once container is restarted
+
+To see list of volumes following command has to be used
+```bash
+docker volume ls
+
+DRIVER    VOLUME NAME
+local     fe804e522b95a028decad888b6e2b87f96adbf9b8f5f0d40d47510312eb4f3ac
+```
+> When we have anonymous volume then everytime the container starts it will create new volume
+
+**Named Volume** - There will be name assigned for that volume
+
+- With this now we will be able to access old volumes.
+- To create Named Volume we dont have to specify that in Dockerfile, but in command prompt
+
+```bash
+docker run --name feedback-app -d --rm -p 3000:80 -v feedback:/app/feedback  feedback-node:volume
+# -v - Represents Volume
+# feedback: - Represents the name of the volume
+# /app/feedback - Represents from where we have to copy
+```
