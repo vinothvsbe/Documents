@@ -485,3 +485,10 @@ docker run --name feedback-app -d --rm -p 3000:80 -v feedback:/app/feedback  fee
 # feedback: - Represents the name of the volume
 # /app/feedback - Represents from where we have to copy
 ```
+
+```bash
+docker volume ls
+
+DRIVER    VOLUME NAME
+local     feedback
+```
