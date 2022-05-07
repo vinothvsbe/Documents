@@ -492,3 +492,9 @@ docker volume ls
 DRIVER    VOLUME NAME
 local     feedback
 ```
+You can  clean the unused volume name by using following commands
+
+```bash
+docker volume rm <Volume_Name> # remove specific <Volume_Name>
+docker volume prune # Removes all unused Volumes
+```
