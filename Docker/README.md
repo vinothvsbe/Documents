@@ -498,3 +498,21 @@ You can  clean the unused volume name by using following commands
 docker volume rm <Volume_Name> # remove specific <Volume_Name>
 docker volume prune # Removes all unused Volumes
 ```
+
+### Getting started with Bind Mounts
+Differene between Volumes and Bind Mounts is, 
+- Volumes will be managed by Docker whereas Bind mount will be our custom written path.
+- If we use Volume then the files will be placed from within container to outside of contaienrs. Whereas Binding is something from external location to internal it will be mapped.
+
+Following command shows that we can place the files from our local to containers and it will be referred as well. So that any changes in that file will be reflected inside containers.
+
+```bash
+docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "C:\Vinoth\poc\docker_course\data-volumes-01-starting-setup\data-volumes-01-starting-setup:/app" -v /app/node_modules feedback-node:volume
+# -v feedback:/app/feedback is to store feedback data in to named volume
+# -v "C:\Vinoth\poc\docker_course\data-volumes-01-starting-setup\data-volumes-01-starting-setup:/app" is to bind all files from my local computer to docker containers
+# -v /app/node_modules To create exception while copying files.
+# How will it identify which one to take excception and which one to not?
+# It depends on length of the path. The path which is smaller will be excepted while copying.
+```
+> Make sure you execute the above command in normal command prompt and not on Git Bash
+
