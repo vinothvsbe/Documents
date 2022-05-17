@@ -679,3 +679,51 @@ Now how to set values for that Argument during build
 docker build -t feedback-node:dev --build-arg DEFAULT_PORT=8000 .
 # This is how to assign values to Argument.
 ```
+
+### Docker - Cross Container Communication - Networking
+Localhost cannot be accessible inside docker environment.
+
+>host.docker.internal should be replaced by localhost
+
+host.docker.internal will be understood internally in docker and it will be translated to IP address internally by docker in code
+So wherever we are using localhost in code that needs to be replaced with host.docker.internal.
+
+**Container-Container communication**
+
+To access different container the best way is to use IPAddress.
+
+```bash
+docker inspect mongodb
+```
+```bash
+"NetworkSettings": {
+            ...
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.2",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:02",
+            "Networks": {
+                "bridge": {
+                   ...
+                }
+            }
+        }
+```
+
+In the above case it is `172.17.0.2`
+So we need to use that IP in the url like shown below
+```node
+mongoose.connect(
+  'mongodb://172.17.0.2/favorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+Thats it. This is how we can access it.
