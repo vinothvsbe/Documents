@@ -516,3 +516,166 @@ docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "C:\Vi
 ```
 > Make sure you execute the above command in normal command prompt and not on Git Bash
 
+Volumes Summary
+```mermaid
+graph TD;
+A[Volumes]
+B[Anonymous Volumes]
+C[Named Volume]
+D[Bind Mount]
+A-->B
+A-->C
+A-->D
+B1[Created Specifically for <br> a single container]
+B2[Survives container shutdown/restart <br> unless --rm is used]
+B3[Cannot be shared across containers]
+B4[Since its anonymous it can't be reused]
+B-->B1
+B1-->B2
+B2-->B3
+B3-->B4
+C1[Created in general - not tied <br> to specific container]
+C2[Survives container shutdown/restart <br> uremoved via Docker CLI]
+C3[Can be shared across containers]
+C4[Can be reused in specific container]
+C-->C1
+C1-->C2
+C2-->C3
+C3-->C4
+D1[Location on Host file system <br> not tied to any specific container]
+D2[Survives container shutdown/restart <br> removal on host file system]
+D3[Can be shared across containers]
+D4[Can be reused in specific container<br> or same containers across restarts]
+D-->D1
+D1-->D2
+D2-->D3
+D3-->D4
+```
+
+> **Anonymous Volume** - Used to temporarily have a quick memory
+
+
+>*Why we still use "Copy . /app" command even after Bind mount?*
+Bind mount will be useful only in development. We will not be using bind mound in production. In production we will use only Snapshot. So copying data is necessary.
+
+**Read-only Volume**
+By default volumes are `read/write`. To make it only readonly then following command has to be used.
+
+```bash
+docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "C:\Vinoth\poc\docker_course\data-volumes-01-starting-setup\data-volumes-01-starting-setup:/app:ro" -v /app/temp -v /app/node_modules feedback-node:volume
+#ro - is readonly
+# The reason why -v /app/temp is there because that makes that folder writable
+```
+
+This makes all folders which are writable and rest is read only.
+
+**Managing Docker Volume** 
+Docker volume can be managed by below comands
+```bash
+docker volume ls 
+# To list all volumes
+docker volume create <Volume Name> 
+# Will create named Volume
+docker volume create 
+# Will create anonymous volume
+docker volume rm <Volume-name> 
+# Will remove that volume
+docker volume prune 
+# Will remove all unused volume
+docker volume inspect <volumne-name> 
+# Will inspect particular volume
+```
+**.dockerignore**
+To ignore certain folders and file while copying we can mention docker ignore.
+something like this
+```docker
+Dockerfile
+.git
+```
+> .dockerignore is similar to .gitignore
+
+**Working with ENV variable**
+working with ENV variable is more easy than we think. So what happens is when we try to set ENV variable in docker, then it will become configurable even through argument.
+*This is how to create docker file with support to ENV variable*
+```docker
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+ENV PORT 80
+# PORT is the environment variable and we are setting default value to it which is '80'
+EXPOSE $PORT
+# That 'PORT' variable can be accessed by using '$PORT'
+CMD ["node","server.js"]
+```
+
+*This is how to pass argument*
+```bash
+docker run -d -p 3000:8000 --env PORT=8000 --name 
+feedback-app -v feedback:/app/feedback -v "C:\Vinoth\poc\docker_course\data-volumes-01-starting-setup\data-volumes-01-starting-setup:/app" -v /app/node_modules feedback-node:env
+# --env is to set environment variable. -e can also be used instead of --env
+# PORT=8000 is how we have to assign the PORT number to the variable
+# If you notice then -p is mapped against 8000 => -p 3000:8000
+```
+
+*How to use that port inside Javascript?*
+```javascript
+...
+...
+...
+app.listen(process.env.PORT); /*This is how we can access that environment PORT variable.*/
+
+```
+
+*How to create env file?*
+Create a file like `.env` and give content like
+```
+PORT=8000
+```
+
+*How to access env file in argument?*
+```bash
+docker run -d -p 3000:8000 --env-file ./.env --name 
+feedback-app -v feedback:/app/feedback -v "C:\Vinoth\poc\docker_course\data-volumes-01-starting-setup\data-volumes-01-starting-setup:/app" -v /app/node_modules feedback-node:env
+# --env-file is to point to the file followed by file name
+# ./.env - Relative path for the environment file
+```
+
+>The use of environment file is you can easily change environment values without chaning the command line argument.
+
+**Using Build Arguments**
+Build arguments are nothing but we can set value and lock it while building the image. Take a look at docker file below
+```docker
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+ARG DEFAULT_PORT = 80
+# This is how the argument need to be set
+
+ENV PORT $DEFAULT_PORT
+# This is how the same argument need to be accessed
+
+EXPOSE $PORT
+
+CMD ["node","server.js"]
+```
+
+Now how to set values for that Argument during build
+
+```bash
+docker build -t feedback-node:dev --build-arg DEFAULT_PORT=8000 .
+# This is how to assign values to Argument.
+```
