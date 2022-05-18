@@ -688,6 +688,8 @@ Localhost cannot be accessible inside docker environment.
 host.docker.internal will be understood internally in docker and it will be translated to IP address internally by docker in code
 So wherever we are using localhost in code that needs to be replaced with host.docker.internal.
 
+>This case is especially helpful if we have Mongodb installed and running in localhost. If we have to access that localhost inside the docker then this is applicable.
+
 **Container-Container communication**
 
 To access different container the best way is to use IPAddress.
@@ -727,3 +729,65 @@ mongoose.connect(
 );
 ```
 Thats it. This is how we can access it.
+
+
+**Docker Network**
+Docker Network will help to name the network and keep all the containers connected when they are in that same network
+
+Following step by step activity will help us to achieve the expected result
+- Step1: Create a new network. We cannot create network in fly. So we have to make sure the network is created first
+```bash
+docker network create favorites-net
+```
+- Step2: Assign the container to that network by using following build argument
+```bash
+docker run --network favorites-net --name mongodb mongo
+```
+> We dont have to use -p when we are not exposing to be used in browser externally . In the above case we are going to access that Mongo image internally. So setting network would be more than enough
+- Step3: Now to utilize this inside code then we need to change the URL accordingly like shown below.
+```node
+mongoose.connect(
+  'mongodb://mongodb:27017/favorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+If you observe that we used the same name as the container here. Thats the way to access containers inside network.
+- Step4: Now for other container to access that MongoDB, then following argument need to be passed
+```bash
+docker run -d --rm -p 3000:3000 --network favorites-net --name favorites-app favorites-node
+# --network and followed by <Network-Name> is the way to pass the inbuild network
+# If we need to check what are the list of networks then "docker network ls" command should be used  
+```
+The above code makes sure that favorites-app is exposed with port 3000 and also internally it is connected in `favorites-net` network.
+
+### :smile:Hints from Author
+Docker Networks actually support different kinds of "**Drivers**" which influence the behavior of the Network.
+
+The default driver is the "**bridge**" driver - it provides the behavior shown in this module (i.e. Containers can find each other by name if they are in the same Network).
+
+The driver can be set when a Network is created, simply by adding the --driver option.
+
+docker network create --driver bridge my-net
+Of course, if you want to use the "bridge" driver, you can simply omit the entire option since "bridge" is the default anyways.
+
+Docker also supports these alternative drivers - though you will use the "bridge" driver in most cases:
+
+- **host**: For standalone containers, isolation between container and host system is removed (i.e. they share localhost as a network)
+
+- **overlay**: Multiple Docker daemons (i.e. Docker running on different machines) are able to connect with each other. Only works in "Swarm" mode which is a dated / almost deprecated way of connecting multiple containers
+
+- **macvlan**: You can set a custom MAC address to a container - this address can then be used for communication with that container
+
+- **none**: All networking is disabled.
+
+- **Third-party plugins**: You can install third-party plugins which then may add all kinds of behaviors and functionalities
+
+As mentioned, the "**bridge**" driver makes most sense in the vast majority of scenarios.
+[Docker-Network-Cheatsheet](Chear-Sheet-Networks-Requests.pdf)
