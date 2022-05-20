@@ -791,3 +791,16 @@ Docker also supports these alternative drivers - though you will use the "bridge
 
 As mentioned, the "**bridge**" driver makes most sense in the vast majority of scenarios.
 [Docker-Network-Cheatsheet](Chear-Sheet-Networks-Requests.pdf)
+
+### Multi-container application
+Commands are as follow
+```bash
+# Mongo Db
+docker run -v mongodata:/data/db --rm  --network multi --name mongodb mongo
+# Node - Backend
+docker build -t multi-backend .
+docker run -p 8000:80  --network multi -v "C:\Vinoth\poc\docker_course\multi-01-starting-setup\multi-01-starting-setup\backend:/app"  -v /app/logs -v /app/node_modules --rm  --name multi-backend-app multi-backend
+# React - Front End
+docker build -t multi-frontend .
+docker run --network multi -p 3000:3000 -v "C:\Vinoth\poc\docker_course\multi-01-starting-setup\multi-01-starting-setup\frontend:/app"  -v /app/node_modules --rm --name multi-frontend-app multi-frontend
+```
