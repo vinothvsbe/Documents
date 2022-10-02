@@ -3604,3 +3604,268 @@ GET /stories/_search
 
 ![Term Lookup Internals](term_lookup_internals.png)
 
+Its much useful when it comes to data transfer, because if we split it into two queries then there will be a network latency.
+
+Transfering data usually takes time.
+> The more term the slower the query.
+
+Elastic search has a limitation of 65K term by default. But it is configurable based on server space.
+
+**Join Limitations**
+
+- To join documents be stored in the same index. 
+- If we join documents from two different index then it will be really slow
+- Parent and child document to be shard in the same Shard
+- Only one join field per index
+- A join field can have as many relation as possible
+- New relations can be added after creating index
+- Child relations can be added only to existing parents.
+- A Document can have only one parent. But a document can have multiple children
+
+**Join field performance considerations**
+- Avoid joining as much as possible
+- Ther performance of has_child query degrades  when there are more child documents pointing to unique parent documents.
+- Basically the more documents are added to child the more query become slower if it has joining.
+- You might see this problem significantly when document size increases.
+- The number of parent documents slows down has_parent query.
+- Each level of relations add overhead to the queries.
+- In some scenario performance of join field wont be bad
+  - A one to many relationship between two document types, where one type has more documents than other.
+  - Eg. Recipe as parent documents and ingredients as child documents
+- In case if you want to consider may be nested data type or may be as a regular field itself.
+- Denormalize data instead of mapping document relationships.
+ 
+## Controlling Query result
+**Specifying result format**
+If you want to return result in yaml format then just use the below query
+```json
+GET /recipe/_search?format=yaml
+{
+    "query": {
+      "match": { "title": "pasta" }
+    }
+}
+```
+
+To return in pretty json format then following query can help
+
+```json
+GET /recipe/_search?pretty
+{
+    "query": {
+      "match": { "title": "pasta" }
+    }
+}
+```
+
+**Source Filtering**
+
+Exclude the source field altogether
+
+``` json
+GET /recipe/_search
+{
+  "_source": false,
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+```
+To return only created field following query can help
+
+``` json
+GET /recipe/_search
+{
+  "_source": "created",
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+```
+To return only object key
+
+``` json
+GET /recipe/_search
+{
+  "_source": "ingredients.name",
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+```
+
+To return all of the object keys
+``` json
+GET /recipe/_search
+{
+  "_source": "ingredients.*",
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+```
+To return Ingredient objects all keys and Servings field
+GET /recipe/_search
+{
+  "_source": [ "ingredients.*", "servings" ],
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+
+To return all of the ingredients object's keys, except the name key
+GET /recipe/_search
+{
+  "_source": {
+    "includes": "ingredients.*",
+    "excludes": "ingredients.name"
+  },
+  "query": {
+    "match": { "title": "pasta" }
+  }
+}
+
+**Specifying the result size**
+To specify how many number of records that the result should contain the following query can be used
+```json
+GET /recipe/_search?size=2
+{
+  "_source": false,
+  "query": {
+    "match": {
+      "title": "pasta"
+    }
+  }
+}
+```
+
+To use parameter within a request body
+```json
+GET /recipe/_search
+{
+  "_source": false,
+  "size": 2,
+  "query": {
+    "match": {
+      "title": "pasta"
+    }
+  }
+}
+```
+
+**Specifying an offset**
+If we want to fetch next set of result then we can use Offset. For eg, `size` parameter will get only amount specified. If we want to get next set of page result then we have to use `from`, like shown below
+
+```json
+GET /recipe/_search
+{
+  "_source": false,
+  "size": 2,
+  "from": 2, //This will help to fetch next page means from 3rd record fetch another two which is size attribute 
+  "query": {
+    "match": {
+      "title": "pasta"
+    }
+  }
+}
+```
+
+**Pagination**
+For Pagination formula used could be
+>total_pages = ceil(total_hits/page_size)
+
+This formula will help to formulate number of pages based on records.
+
+**Sorting**
+Sorting in ascending order
+
+```json
+GET /recipe/_search
+{
+  "_source": false,
+  "query": {
+    "match_all": {}
+  },
+  "sort": [
+    "preparation_time_minutes"
+  ]
+}
+```
+
+Sorting in descending order
+```json
+GET /recipe/_search
+{
+  "_source": "created",
+  "query": {
+    "match_all": {}
+  },
+  "sort": [
+    { "created": "desc" }
+  ]
+}
+```
+Sorting by multiple fields
+
+```json
+GET /recipe/_search
+{
+  "_source": ["preparation_time_minutes","created"],
+  "query": {
+    "match_all": {}
+  },
+  "sort": [
+    {"preparation_time_minutes": "asc"}
+    { "created": "desc" }
+  ]
+}
+```
+
+**Sorting by multi-valued fields**
+To sort by the average rating in descending order
+
+```json
+GET /recipe/_search
+{
+  "_source": "ratings",
+  "query": {
+    "match_all": {}
+  },
+  "sort": [
+    {
+      "ratings": {
+        "order": "desc",
+        "mode": "avg"
+      }
+    }
+  ]
+}
+```
+
+**Adding filter clause to the bool query**
+
+```json
+GET /recipe/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "title": "pasta"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
