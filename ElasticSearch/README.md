@@ -53,7 +53,7 @@ curl -XGET "http://localhost:9200/_search" -H 'Content-Type: application/json' -
 We can use any HTTP client to do this work.
 
 
-###Sharding and Scalability
+### Sharding and Scalability
 If we want to store 1TB of data and we have only one node with 500GB storage then its very clear that Elastic search cannot index that. If we add additional node with sufficient capactiy then ES can index that data in both node with the help of **Sharding**. Sharding is the concept of diving the index in to pieces. Each piece is called *Shard*. Sharding is done in index level not on the document level. The main purpose of Shardinig is to scale the data horizontally.
 - A Elastic search index may contain more than one Apache Lucene Indices
 - A shard has no predefined sizes, it grows as document added to it
