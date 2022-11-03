@@ -1,25 +1,74 @@
 # Cloud Technology
 
+## Characteristics of Cloud computing
+- On-Demand Self Service
+- Borad Network Access
+- Resource Pooling
+- Rapid Elasticity
+- Measured Service
+
 ## Overview
 
 Cloud platform helps in many aspects. Elasticity, consistency, security, cost etc. Cloud works based on OpEX model and not CapEX model
 
 #### CapEX
 Capital Expense: Where the complete money is invested upfront by just forcasting. But it doesnt necessarily be fully utilised.
+> Traditional IT is CapEx oriented. Buying space, server, AC, Maintanence etc..
+
+- Non optimal
+- Not flexible
+
 
 #### OpEX
 Operational Expense: Where the amount is paid based on operation performed and not upfront. Which is much cheaper when it comes to enterprise applications.
 
+- Extremely Flexible
+- More optimal
+
 ## Different types of Cloud Service
 
 #### Iaas - Infrastructure as a service
+The cloud provide underlying platform
+- Compute
+- Networking
+- Storage
+
+>  Eg:  Virtual Machines
+
+
 #### Paas - Platform as a service
+The cloud provide platform for running apps
+Including: Compute, networking, storage, runtime, environments etc
+> Eg : Web apps. We dont have access to Virtual machine for this
 #### Saas - Software as a service
+Software running in cloud. We dont have to install anything. We can just use part of the software but we will not be able to access any insfrastructure. 
+
+![Cloud Model](cloud-models.png)
+Source: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/strategy/monitoring-strategy
+
 #### Faas - Function as a service
 #### Daas - Database as a service
 #### IOTaas - IOT as a service
 #### AIaas - AI as a service
 
+
+## Types of cloud
+- Public Cloud
+    - Cloud setup in public network
+    - Managed by large companies
+    - Accessed through internet
+- Private Cloud
+    - Cloud set up in organization's premises
+    - Managed by the Orgranization's IT team
+    - Accessible only in the organization's network
+    - Openshift
+- Hybrid Cloud
+    - A cloud setup in an organization premises
+    - but also connected to public cloud
+    - Workload can be seperated between two clouds
+    - i.e Sensitive data in the organization premises, public data in the public cloud
+    - Usually managed by the public cloud, but not always.
+    Eg: Azure Arc, AWS Outposts 
 ## Region
 Datacenter built around the globes at different locations are called region. There are ~60 regions avaialble for Microsoft Azure. Almost every new resource we create should be allocated to Region. And each physical data centers are called **Zones**. There are possiblities that a Region may contain more than one Zone.
 
