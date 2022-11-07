@@ -795,12 +795,221 @@ As mentioned, the "**bridge**" driver makes most sense in the vast majority of s
 ### Multi-container application
 Commands are as follow
 ```bash
-# Mongo Db
-docker run -v mongodata:/data/db --rm  --network multi --name mongodb mongo
-# Node - Backend
+# Step1: Creating Network
+docker network create multi
+# Step2: Mongo Db
+docker run -v mongodata:/data/db --rm  --network multi -e MONGO_INITDB_DATABASE=course-goals --name mongodb mongo
+# <course-goals> in the above command is nothing but the table which this is associated to
+# Step3: Node - Backend
 docker build -t multi-backend .
 docker run -p 8000:80  --network multi -v "C:\Vinoth\poc\docker_course\multi-01-starting-setup\multi-01-starting-setup\backend:/app"  -v /app/logs -v /app/node_modules --rm  --name multi-backend-app multi-backend
-# React - Front End
+# Step4: React - Front End
 docker build -t multi-frontend .
-docker run --network multi -p 3000:3000 -v "C:\Vinoth\poc\docker_course\multi-01-starting-setup\multi-01-starting-setup\frontend:/app"  -v /app/node_modules --rm --name multi-frontend-app multi-frontend
+docker run -p 3000:3000 -v "C:\Vinoth\poc\docker_course\multi-01-starting-setup\multi-01-starting-setup\frontend\src:/app/src" --rm --name multi-frontend-app multi-frontend
+# Step5: Stop all containers
+docker stop mongodb multi-backend-app multi-frontend-app
+```
+> Make sure the localhost and corresponding port number is used to refer the api in React application and not the one used in multi network.
+
+If we want to provide access control to Mongo DB, then following command need to be used
+
+```bash
+# Mongo Db
+docker run -v mongodata:/data/db --rm  --network multi -e MONGO_INITDB_ROOT_USERNAME=max -e MONGO_INITDB_ROOT_PASSWORD=secret --name mongodb mongo
+```
+
+```bash
+#To create a new user
+- Step 1: docker exec -it mongodb bash
+- Step 2: root@54482f469d0d:/# mongo
+- Step 3: show dbs # To show all db's
+- Step 4: use course-goals # course-goals is the database name
+- Step 5: db.createUser({user: "vinoth", pwd: "secret", roles:[{role:'readWrite',db:'course-goals'}]})
+- Step 6: show users
+- Step 7: exit # 2 times
+```
+And while using this in Banckend api then the url has to be written in certain format.
+
+```node
+mongoose.connect(
+  'mongodb://max:secret@mongodb:27017/course-goals',
+  ...
+  ...
+ 
+);
+```
+`username:password@<hosturl>?authSource=admin` is the pattern which needs to be used.
+
+> Use.dockerignore to ignore files which are not necessary to be copied to Docker image.
+
+
+### Docker Compose 
+Makes multi container setup easier. It can automate Multi container setup. 
+Docker compose can actually have multiple docker build and multiple docker run commands
+
+> One Configuration file + Orchestration Commands (build, start, stop ...)
+
+> Docker compose will not replace Docker Files.
+Docker Compose will not replace Images or Containers. 
+Docker compose is not suitable for managing multiple containers on different hosts
+
+Docker Compose file can be created in the name of `docker-compose.yaml`
+And can be created in the following way
+```bash
+version: '3.8'
+services:
+  mongodb:
+    image: mongo
+    volumes:
+      - mongodata:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    # Environment can be specified in multiple ways. 
+    # Normally in below mentioned format 
+    # or even to place in environment file and then we can use it, like shown below
+    # ==========================================================================
+    # environment:
+    #   - MONGO_INITDB_DATABASE=course-goals
+    # ==========================================================================    
+    env_file:
+      - ./env/mongo.env
+    # By default networks are assigned when we run commands through docker compose
+    # we dont have to mention below mentioned networks, but in case if you want a 
+    # command to use a specific network then we can force it in below mentioned way
+    # ==========================================================================
+    # networks:
+    #   - multi
+    # ==========================================================================
+    container_name: mongodb
+
+  multi-backend-app:
+    # Short form to specify build location
+    build: ./backend
+    # Long form
+    # build:
+    #   context: ./backend # Context is set to Docker file location
+    #   dockerfile: Dockerfile # Name of the Docker file in case if it is different For eg. Dockerfile-Dev
+    #   args: #Specify build args in case if there is any
+    #     some-arg: 1 # Assuming the build argument name is some-arg
+    # image: multi-backend
+    container_name: multi-backend-app
+    volumes:
+      - ./backend:/app # relative path should be sufficient. Whereas in command prompt we have to specify absolute path.
+      - logs:/app/logs
+      - /app/node_modules
+    ports:
+      - 8000:80
+    depends_on:
+      - mongodb
+    
+  multi-frontend-app:
+    build: ./frontend
+    image: multi-frontend
+    volumes:
+      - ./frontend/src:/app/src
+    container_name: multi-frontend-app
+    ports:
+      - 3000:3000
+    stdin_open: true # To open Standard Input tunnel
+    tty: true # TTY to attach terminal to it.
+    depends_on:
+      - multi-backend-app
+# When we are using named volumes then we have to specify that volume name here,
+# in same level of 'services:' section
+volumes:
+  mongodata:
+  logs:
+
+```
+
+**Command to run/stop docker compose file**
+```bash
+docker-compose up -d #run docker compose in detached mode
+docker-compose down -v # remove all started containers and its volume
+```
+
+
+```bash
+docker-compose build # Just force build all the containers
+docker-compose down -v # remove all started containers and its volume
+```
+
+### Utility Containers
+Utility containers are nothing but the container which helps in getting the work done.
+
+```bash
+docker attach <container-name> # Will attach the containers which are running in detach mode
+```
+
+`docker exec` command will be useful to run the command isnde the container itself. Usually `docker run` will run the whole container itself, whereas `docker exec` will run the command inside the container like shown below
+
+```bash
+docker run node -t node-package
+docker exec -it node-package npm init
+# Here it just runs npm init inside the node-package itself.
+# This can also be written in following way without container as well
+docker run -it node npm init
+```
+
+The best use case for the above utility container is we dont need to have node installed in the local machine. We can use the temporarily running node container. Take a look at the docker file
+
+```docker
+FROM node:14-alphine
+
+WORKDIR /app
+```
+And command will be like
+
+```bash
+docker build -t node-util . # This will build the container
+
+docker run -it -v "C:\Vinoth\poc\docker_course\multi-utility\multi-utility:/app" node-util npm init
+# This will run the container
+```
+
+> Utility containers are nothing but revised form of same executable.
+
+In the previous command if you can see that after container name we have used `npm init`. But not only this command we can use any command out of it. But there is a possiblity to make users who are using this containers to use specific set of command. For that `ENTRYPOINT` is used
+
+```dockerfile
+FROM node:14-alphine
+
+WORKDIR /app
+
+ENTRYPOINT ["npm"]
+```
+Now the same command will become like this
+
+```bash
+docker build -t node-util . # This will build the container
+
+docker run -it -v "C:\Vinoth\poc\docker_course\multi-utility\multi-utility:/app" node-util init 
+# Nowe we dont have to use NPM because by default NPM  become our entry point
+```
+
+**Using Docker Compose**
+```dockerfile
+version: '3.8'
+services:
+  npm:
+    build: ./
+    stdin_open: true
+    tty:true
+    volumes:
+      - ./:/app/
+```
+
+Now this file can be executed in following ways
+```bash
+docker-compose up
+# No point in running this because this is utility container
+docker-compose up init
+# But there is no service as such
+docker-compose run npm init
+# This will execute properly. 
+# Here npm is nothing but container name specified in docker-compose-yaml file
+# not the node package module. You can give any name you want internally it will call npm
+docker-compose run --rm npm init
+# --rm will make sure it will remove the images
+# Remember to see all created containers in docker container list 
+# it will not appear in docker ps but in docker ps -a
 ```
