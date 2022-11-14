@@ -69,6 +69,10 @@ Source: https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/strateg
     - i.e Sensitive data in the organization premises, public data in the public cloud
     - Usually managed by the public cloud, but not always.
     Eg: Azure Arc, AWS Outposts 
+
+## Subscription
+Whenever a new account is created there will be a subscription tagged to that.
+
 ## Region
 Datacenter built around the globes at different locations are called region. There are ~60 regions avaialble for Microsoft Azure. Almost every new resource we create should be allocated to Region. And each physical data centers are called **Zones**. There are possiblities that a Region may contain more than one Zone.
 
@@ -80,15 +84,49 @@ Resource Group is a logical container for resources. It is used to to contain re
 
 we can create Azure resource group with the help of portal or through command prompt as well
 
-
-```shell
+Bash command
+```bash
 az group create -l centralindia -n CLITest-rg
 ```
 Same activity can be done with Powershell instead of CLI and here is the command for that
 
+Powershell command
 ```powershell
 New-AzResourceGroup -Name PSTest-rg -location centralindia
 ```
+
+Creating resource group
+
+You can use search bar to search resource group, by typing resource name
+
+#### Region
+Selecting region is very important with respect to Region.
+- Geographical proximity to System-s audience- Choosing users closest to Target audience
+- Services availability.
+https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/
+
+- Availability Zone - Support of Availability zones
+- Pricing - Pricing changes from region to region
+#### Resource Group
+- A logic container for resources
+- Used for grouping resources by a logic boundary
+- Free
+- Examples
+    - Development/Test/Production resources
+    - Team A resources/ Team B resources
+> Subscription is also a logical container
+
+https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-setup-guide/organize-resources?tabs=AzureManagementGroupsAndHierarchy
+
+>Management groups are used to manage multiple subscriptions
+
+- Its best practice to have an **rg** or **RG** as part of resource group name
+- Could be prefix or suffix
+    - RG-Project-Dev
+    - Finance-Resources-rg
+
+- Almost every resource in Azure is placed in a Resource Group
+
 
 #### Resource Group vs Subscription
 Subscription has associated account and cost center. Subscription is an account level container. Resource Groups are logical container for resources.
@@ -110,12 +148,13 @@ There is a way to calculate SLA's using the tool called [UpTime](https://uptime.
 In cloud everything is Cost.
 - Per Resource (For eg,VM)
 - Per Consumption (For eg, Function Apps)
-- Reservations
+- Reservations - Certain amount of time.
 
 Always check cost before provisioning
 
 To Check any pricing upfront make sure we use [Azure Calculator](https://azure.microsoft.com/en-in/pricing/calculator/)
 
+Cost management + Billing : Will help to form the budget
 
 ## VSCode Extensions for Azure
 - Azure Account
