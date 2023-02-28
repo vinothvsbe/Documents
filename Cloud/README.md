@@ -192,3 +192,50 @@ Resource providers are the list of capabilities available for subscriptions. Onc
 ```shell
 az provider show--namespace microsoft.insight -o table
 ```
+
+## Azure Compute
+- Set of cloud services for hosting and running applications
+- Allows uploading your code and then running it
+- Offers various levels of control and flexibility
+
+There are 4 types of compute services
+- Virtual Machines
+- App Services
+- AKS
+- Azure Function
+
+### Virtual Machines
+- A Virtual server running on a physical server
+- Allows creating new servers extremly quick
+- Based on existing resources of the physical server
+- From the user's point of view - a regular server, nothing new
+- Called as **Unmanaged service**
+- Eg: Azure wont manage anything we have to manage everything
+- **VM Density** - Is number of Virtual machines per host
+
+#### Steps for creating Virtual Machines
+- Select the location
+- Select the image (OS + Pre-Installed Software)
+- Select the size
+- *Dont forget to check price*
+
+#### Cost of VM's includes following items
+- VM
+- Disk
+- IP
+- Storage
+
+To Check any pricing upfront make sure we use [Azure Calculator](https://azure.microsoft.com/en-in/pricing/calculator/)
+
+#### How to reduce cost
+- Auto Shutdown - Point to remember is though VM's are shutdown, IP and Network cost will still incur
+- Reserved Instances - For 1-3 years, will have reduced cost
+- Spot Instances - Machine that run on Unused capacity in Azure. Can be evicted any moment when needed by Azure
+- Disk optimization - Make sure to select the right disk for the machine. Default is premium SSD - the most expensive option. Non IO- intesive machines can do wit Standard SSD. Disk type affects SLA
+![DiskType](Disk_Type.png)
+
+- Always select right size for your machine.
+    - CPU shouldn't rest. Make sure CPU utilization should be around 70%.
+- Select Linux over windows when possible
+- Check price in nearby regions
+
