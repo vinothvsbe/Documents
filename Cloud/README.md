@@ -229,13 +229,103 @@ To Check any pricing upfront make sure we use [Azure Calculator](https://azure.m
 
 #### How to reduce cost
 - Auto Shutdown - Point to remember is though VM's are shutdown, IP and Network cost will still incur
-- Reserved Instances - For 1-3 years, will have reduced cost
+    - Reduce more than 50% of the cost
+- Reserved Instances - For 1-3 years, will have reduced cost. Mainly used for Production machine.
+    - Offers great price and can reduce up to 60% of the listed price
+    - Can be divided to pay monthly
+    - **Once started can never be reverted back**
 - Spot Instances - Machine that run on Unused capacity in Azure. Can be evicted any moment when needed by Azure
-- Disk optimization - Make sure to select the right disk for the machine. Default is premium SSD - the most expensive option. Non IO- intesive machines can do wit Standard SSD. Disk type affects SLA
-![DiskType](Disk_Type.png)
+    - You will receive very short notification for evicting your machine
+    - Great for non critical projects
 
+- Disk optimization - Make sure to select the right disk for the machine. Default is premium SSD - the most expensive option. Non IO- intesive machines can do with Standard SSD. Disk type affects SLA
+![DiskType](Disk_Type.png)
+    - App servers or Cache server can use Non IO- intensive machines.
+    - High disk operation can use Premium SSD
 - Always select right size for your machine.
     - CPU shouldn't rest. Make sure CPU utilization should be around 70%.
 - Select Linux over windows when possible
 - Check price in nearby regions
 
+#### Availability of VM
+There are multiple SLA's available.
+- With Premium SSD the SLA is 99.99%
+- With Standard SSD the SLA is 99.5%
+- With standard HDD the SLA is 95%
+
+#### Availability concepts in Azure
+There are four availability concepts
+- Fault Domain
+- Update Domain
+- Availability Set
+- Availability zone
+
+Fault Domain
+- Fault Domain is a logical group of physical hardwares that share a common power source and network switch
+- we have to make sure that we select servers from more than one Fault Domain
+
+Update Domain
+- Update Domain is a logical group of physical hardwards that goes on server upgrades, rebooting etc
+- We have to make sure that we select servers from more than one Update Domain
+- Update domain is not like Fault domain, but it is just a logical grouping. Doesnt necessarily has to be at the same rack like Fault domain
+
+
+Availability Set
+- A collection of Fault domain and Update domains a virtual machine will be spread across
+- Can contain upto 3 Fault domains and up to 20 update domains 
+- All domains (Fault and Update) domain in same location
+- Deploy identical VM's in to the same Availaiblity set
+- If needed - deploy load balancers to route between the VMs
+- Availability set is free, you pay only for the additional PM's
+
+Availaiblity Zone
+- A building contain autonomus data center. 
+- A physically seperate zone
+- Each zone functions as a fault & update domain
+- Provides protection against a complete zone shutdown - Better SLA
+- Deploy identitcal VMs into seperte Availabiltiy zone in the same region
+- Ensure they wont shut down simultanteously when the zone is shut down
+- If needed - deploy load balancer to route between the VMs
+
+
+
+#### Creating Available and Cost effective VM
+- Go to search and type Virtual Machine
+- Create a new one
+-  create Resource Group
+- Create VM Name, Region, Availabiltiy Option
+- Select Availability option as Availaiblity Zone
+- If availability zone is not there create a new one. When creating make sure you have selected Fault Domain as 2 approx and Update Domain as 3 approx for non production environment
+- Availability Zones will not be there for all the regions
+- If Availability zone is not present for a particular region then selected Availability set
+- Select Operating system (For eg: Windows server 2019 Data center) , then Select Vcpus (2) and RAM (8gig) etc...
+- Provide admin user name and password
+- then instead of creating VM directly go to disk section.
+- Remember that by default Premium SSD will be selected. We have to make sure that do we really require that.
+- In the Management section  go to AutoShutDown and setup the configuration. This will save lot of money
+- Before creating there is an option for ARM template to download
+
+
+#### ARM Template
+- Azure Resource Manager Template
+- A Json file describing the resources to be created
+- used by Azure in all deployments
+- Can be exported modified, uploaded deployed
+- Can also be created from scratch
+- ARM template is a decalarative way of deploying resources
+    - Declarative
+        - Describes the end result
+        - Allows "What-if" operation
+        - Can deploy multiple resources at once
+        - Can be integrated in CI/CD processes
+        - Can be source controlled
+    - Imperative
+        - Sends instruction to run
+        - Error prone
+        - Can't be verified
+        - Can't be source controlled
+        - Suited for quick and dirty operations
+
+> If i want to create some quick virtual machine then i can use Imperative method whereas if you want to create a complete Azure environment then Declaratice method can be used
+
+ARM Template - When we download will have two files, *parameters.json* and *template.json*
