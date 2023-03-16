@@ -329,3 +329,217 @@ Availaiblity Zone
 > If i want to create some quick virtual machine then i can use Imperative method whereas if you want to create a complete Azure environment then Declaratice method can be used
 
 ARM Template - When we download will have two files, *parameters.json* and *template.json*
+
+If we want to deploy the files then we can go to bash command from cloud storage location
+
+```bash
+az deployment group create --resource-group optimized-vm-rg --template-file template.json --parameters parameters.json
+```
+The above command is used to deploy any ARM Templates.
+
+#### Virtual Machine scale set
+- A group of seperate VMs sharing the same image
+- Managed as a group
+- Can be scaled out or in manually or according to predefined condition
+- Great for handling unpredictable load
+- Once setup the machines should notbe modified
+    - Change files, install apps etc
+- New machines created by the scale set will be based on the original image
+- For web apps, a load balancer should be put in front of the scale set
+- Scale set is free
+- You pay for the VM's deployed in it
+
+- Scaling menu in scaling is the main point where we configure how many instances and when what should kicks in
+
+Before selecting the vm scale set, first we need to register the resource in ```Subscription->ResourceProviders-> Select the resource and click register``` button
+For this scale set to work we have to register ```microsoft.insights```
+
+To check the status of the registered item, try following command in thje bash script
+
+```bash
+az provider show --namespace microsft.insights -o table
+```
+
+#### Azure Instance Metadata Services
+- A little knows feature of Azure VMs
+- A REST API accessible from the VM
+- Providing a lot of info about the machine
+- Info includes:
+    - SKU, storage, networking, scheduled events
+- Accessible only from the VM
+
+- With Scaleset
+    - Get notification about upcoming eviction
+- Can be polled every ~1 to get enough time to close things up
+
+
+Step by Step process
+- Create Virtual Machine by default
+- Login to Virtual Machine through RDP
+- Install Postman inside Virtual Machine
+- now in Postman -> Headers -> Put key = Metadata and Value = true
+- URL: http://169.254.169.254/metadata/instance?api-version=2021-02-01
+- verb: HttpGET
+
+> If we have to get the same details for scheduled events rather than instances then this url
+http://169.254.169.254/metadata/instance?api-version=2021-02-01 has to be replaced on top of this url http://169.254.169.254/metadata/instance?api-version=2021-02-01
+
+- The actual Link to the page can be found here
+[Azure Instance Metadata Service URL](https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service?tabs=windows)
+
+
+#### Setting up the Catalog App
+First lets go to the app and publish it with following command
+
+```bash
+dotnet publish -o publish
+```
+`-o` mention that output to and `publish` mention the folder to publish the files
+
+Step by Step
+- Create a new Virtual Machine with default configuration , choose the machine type wisely. We dot have to go for higher configuration CPU's. 
+- Change disk type from Premium SSD to `Standard SSD`
+- move to networking tab and create a good name based on resource group name without -rg and give `-vnet`
+- And also we need to select the ip configuration to point to Static otherwise the ip keep changing
+- Move to Management tab - Enable Auto shutdown
+- Then `Review + Create`
+
+>On the newly created Virtual machine in order to deploy the application we need to install IIS first. For that we have to got here and add features using Add Roles and Features in Server Manager.
+
+Steps to do inside new Virtual Machine
+- Open Server
+- Go to Server Manager
+- Click Local Server
+- Click IE Enhanced Security Configuration in the main screen
+- Click on Off for both the items shown in popup . This will avoid unnecessary popups in IE
+- Install IIS through Add Roles and Features from Server Manager Page
+- Click on the next,next and select the instance where we are going to install the feature and in the feature section select Web Server (IIS)
+- Once it is installed then we are all set.
+- Check that by typing localhost in browser
+- If required install Google chrome
+- Then install .net 6 - Hosting Bundle. This we can see when we go to all .NET 6 releases and select hosting bundle and not .NET Run time/ .NET SDK
+
+Steps to deploy node application in Unix VM
+- Create Unix VM
+- Open Putty
+- Place the Server ip address in that
+- It will prompt you for username and password
+- Then following commands has to be executed one by one
+```bash
+sudo apt install git # To install git
+sudo apt update # To update everything to latest
+sudo apt install nodejs # To install nodejs
+sudo git clone https://github.com/memilavi/WeatherAPI.git # To clone the project
+cd Weather API $ To see the code directory
+ls # To list down all files iniside the Directory
+sudo apt install npm # To install node modules
+cd node_modules # To get inside the directory
+ls # To see files
+npm start # To start the application
+```
+>The above configuration is for node js application
+
+#### Virtual Machines Tips and Tricks
+- If your VM needs more disks, in addition to the default one provided by Azure, then go to the Disks page for that, and add whatever disk you need. Don't forget that disks have costs, and check it in the calculator beforehand.
+
+- Want to backup your VM so that it can be restored in a case of failure? Check the Backup page, where you can define the frequency of the backup and the retention period.
+
+- You can define DNS name for the VM, so that it will be accessible not just using its IP. This can be done by clicking the DNS Name: Configure link in the Overview page.
+
+
+> Azure Architecture diagram icons can be downloaded from this link [Architecture diagram icons](https://learn.microsoft.com/en-us/azure/architecture/icons/)
+
+> VM's can be accessed from internet if someone knows public IP then they can RDP this
+
+> Shutdown the VM's when not in use
+
+#### App Services
+- A fully managed web hosting for websites
+- Publish your code - and it just runs
+- No access to the underlying servers
+- Secured and Compliant  - Microsoft is responsible for security and compliances
+- Integrates with many source controls and Devops engines
+    - Hithub
+    - Bitbucket
+    - Azure Devops
+    - Docker Hub
+    - and many more
+- Supported Platforms
+    - .NET
+    - .NET Core
+    - Node.JS
+    - Java
+    - Python
+    - PHP
+- App service supports containers
+- App Types: 
+    - Web Apps
+    - Web API
+    - Web Jobs
+- Extremely easy to deploy
+    - Develop your app
+    - Create Web App (Can be done through the IDE)
+    - Publish your code
+    - Done
+    
+
+**Creating new Azure App Serice**
+Creating new azure app service is easy
+- Create new App Service
+- Provide name field (It should be unique across entire Azure cloud)
+- And select the region + other items.
+- By default if we are in free tier then we have to stick to that.
+- Just Review + Create
+
+**Deploying existing .NET Core application**
+- For the project just go to terminal
+- write following command
+```bash
+dotnet publish -o publish
+```
+- once publish folder is created then right click on the "Deploy to web app"
+- once deployed and we are ready
+
+**App Service features**
+- In the Development Tools of App Service we have App Service Editor to edit the files and save
+- Settings -> Scale Up is to sacle the subscription
+- Settings -> To include Auto scaling option to increase capacity up and down. Remember in the free tier we dont have option to Auto scale.
+- We can browse the pplication deployed in Default Domain url which is as example
+> readit-inventory-vinoth.azurewebsites.net
+
+- By default, App Services can be accessed using http and https. You can make it https only in the TLS/SSL settings in the App Service menu.
+
+- App service can run also batch processes, or continuous jobs, and not only web apps with the request / response  paradigm. This can be done using the WebJobs menu item, where you can upload exe file that will run always, or on scheduled times.
+
+- Want to know the IP address of the App Service? Take a look at the Properties of the page. You can find there the Virtual IP address of the App Service, and also - the Outbound IP addresses. Note the plural - App Service can have more than one outbound IP address.
+
+- Want to know how much storage did you use, and what are the current usage statistics? Go to Quotas for this data.
+
+**Shutting down app service**
+With VM's i recommend to use Shut down the VM when not in use
+With App Services this is not the case. 
+> while you can stop an App Service (using the stop button at the top of the overview page) all it will do is to stop the functionality of the App service but you will still pay for it
+
+Thats an important difference between App Service and a VM.
+With VM - you pay when the VM is on
+With App Service - The only way to stop paying for it is completely deleting it.
+
+This is another difference betwen VM a nd App Service you should keep in mind.
+
+#### AKS - Azure Kubernetes Services
+- Managed Kubernetes on Azure
+- Allows deploying containers and managing them using Kubernetes on Azure
+- Paying only on the instances (=VMs) used
+
+#### Containers
+- Traditional Deployment
+    - Code was copied and built on the production server
+    - Problems were found on the servers that weren't found in the dev machines
+- Thin packaging model
+- Packages software, its dependencies, and configuation files
+- Can be copied between machines
+- Uses the underlying operating system
+
+#### Container vs VM
+- VM's run on top of Hypervisor whereas Containers runs on top of Operating System
+
