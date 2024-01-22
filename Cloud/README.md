@@ -459,7 +459,7 @@ npm start # To start the application
 - No access to the underlying servers
 - Secured and Compliant  - Microsoft is responsible for security and compliances
 - Integrates with many source controls and Devops engines
-    - Hithub
+    - Github
     - Bitbucket
     - Azure Devops
     - Docker Hub
@@ -542,4 +542,90 @@ This is another difference betwen VM a nd App Service you should keep in mind.
 
 #### Container vs VM
 - VM's run on top of Hypervisor whereas Containers runs on top of Operating System
+
+#### Introduction to Docker
+There are registries available for Docker such as Docker hub, Amazon ECR (Elastic container registry) and Azure ACR (Azure container registry)
+
+#### Container Management
+Problems we face if there are more Containers
+- Deployment
+- Scalability
+- Monitoring
+- Routing
+- High Availability
+
+
+#### Introduction to Kubernetes
+- Container management
+- Provides all aspect of Cotainer management
+    - Deployment
+    - Scalability
+    - High Availability
+    - Automated Deployment
+    - Configuration Management
+    - And many more
+
+> Pod is a container 
+
+> To know the status of the registered resource providers we can use shell with this command **az provider show --namespace Microsoft.ContainerRegistry -o table**
+
+
+#### Deploying container to the AKS
+- Create a docker file and build the image
+- Now if you go to Visual studio and navigate to Docker extension
+- You can find Image section
+- In that image section expand the image that you have built
+- And you can find something called `latest`
+- In the meantime you can create the azure container registry by following the steps
+    - Go the Registires and connect to Azure
+    - It will list down list of all subscription
+    - Create new container registry by right click on subscription
+    - It will ask for the name
+    - Then it will ask for the plan, as of now we have selected Basic
+    - Then it will ask for Resource Group, select the existing one if any
+    - Then it will ask for the region to deploy
+    - Once it is done, the container registry will be displayed in Visual Studio code under the Subscription section
+- Once Container registry is created right click on Images-> <Image> -> latest -> push.
+- This will showcase the associated Container registry which we created above. And we just have to push it
+
+#### Working with AKS
+To create AKS cluster
+- Go to search bar and type Kubernetes service and select from Azure Portal
+- now Create a Kubernetes cluster
+- Fill in all necessary details
+- Make sure you select the standard machine to avoid cost
+- In the integration section, select readitacrvinoth or any container registry that you have built it
+- now install Kubernetes cli to perform further
+
+To install Kubectl following command need to be installed
+
+``` bash
+brew install kubectl
+```
+
+To login in to the azure from terminal then following command need to be done
+
+``` bash
+az login
+```
+To get the credentials from azure kubernetes service then following command need to be used.
+
+```bash
+az aks get-credentials --resource-group readit-app-rg --name cart-aks
+```
+> Remeber to change the deployment.yaml file to point image location to readitacrvinoth.azurecr.io/cart:latest
+
+To get nodes of kubectl then following command need to be used
+
+```bash
+kubectl get nodes
+```
+
+To deploy yaml file to kubectl then following command need to be used
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+> A point to remember that when we try to build the image in mac then we have to make sure that we build the image with linux/arm64
 
