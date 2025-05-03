@@ -629,3 +629,4 @@ kubectl apply -f deployment.yaml
 
 > A point to remember that when we try to build the image in mac then we have to make sure that we build the image with linux/arm64
 
+[Azure Administration](Administrator/Azure/README.md)
