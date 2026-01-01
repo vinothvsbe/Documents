@@ -21,3 +21,6 @@ All my learning docs are located here
     - [AWS](Cloud/Azure/README.md)
 - [Flutter](Flutter/README.md)
 - [Project Management](ProjectManagement/README.md)
+- [Agile](Agile/README.md)
+- [Self Development]()
+    - [Your Brain On Porn](Self%20Development/Your%20Brain%20On%20Porn/README.md)
